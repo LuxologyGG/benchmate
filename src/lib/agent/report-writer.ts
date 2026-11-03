@@ -1,6 +1,7 @@
 import { isDemoMode } from "@/lib/config";
 import { buildDemoReport } from "@/lib/demo/fixtures";
-import { chatCompletion, extractJsonObject } from "@/lib/meta-client";
+import { chatCompletionJson } from "@/lib/meta-client";
+import { getSparkModelId } from "@/lib/config";
 import type {
   AgentResult,
   ExtractionResult,
@@ -23,7 +24,14 @@ export async function writeLabReport(input: {
     return buildDemoReport(sampleId, input.extraction, input.agent);
   }
 
-  const result = await chatCompletion({
+  const { data: parsed } = await chatCompletionJson<{
+    title: string;
+    sections: LabReport["sections"];
+    markdown: string;
+  }>({
+    model: getSparkModelId(),
+    max_completion_tokens: 8192,
+    maxParseAttempts: 2,
     messages: [
       {
         role: "developer",
@@ -43,14 +51,7 @@ export async function writeLabReport(input: {
       },
     ],
     response_format: { type: "json_object" },
-    max_completion_tokens: 4096,
   });
-
-  const parsed = extractJsonObject<{
-    title: string;
-    sections: LabReport["sections"];
-    markdown: string;
-  }>(result.content ?? "{}");
 
   return {
     title: parsed.title ?? input.extraction.experimentTitle,

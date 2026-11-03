@@ -7,28 +7,51 @@ import type {
   ExtractionResult,
   LabReport,
   LabSampleId,
+  ProtocolDeviation,
+  TraceEvent,
   VerificationResult,
 } from "@/lib/types";
 import { PipelineProgress, type PipelineStageId } from "@/components/benchmate/pipeline-progress";
+import { AgentTracePanel } from "@/components/benchmate/agent-trace-panel";
 import { BoundingBoxOverlay } from "@/components/benchmate/bounding-box-overlay";
 import { MeasurementTable } from "@/components/benchmate/measurement-table";
 import { CalibrationChart } from "@/components/benchmate/calibration-chart";
 import { FigletSectionTitle, FigletWordmark } from "@/components/benchmate/ascii-header";
 import { AsciiBio, AsciiLoader } from "@/components/benchmate/ascii-bio";
-import { AgentTerminal } from "@/components/benchmate/agent-terminal";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
+  AlertTriangle,
   Beaker,
   Download,
   FileText,
   FlaskConical,
   ImagePlus,
   Loader2,
+  CircleDot,
   Scale,
 } from "lucide-react";
+
+function Panel({
+  children,
+  className = "",
+  testId,
+}: {
+  children: React.ReactNode;
+  className?: string;
+  testId?: string;
+}) {
+  return (
+    <section
+      data-testid={testId}
+      className={`border border-border/70 bg-card/50 animate-in fade-in slide-in-from-bottom-2 duration-500 ${className}`}
+    >
+      {children}
+    </section>
+  );
+}
 
 type Health = { demoMode: boolean; provider: string; model: string };
 
@@ -55,28 +78,9 @@ async function fetchSampleAsDataUrl(path: string, name: string): Promise<ImageIt
   return { id: `sample-${name}`, name, dataUrl };
 }
 
-function Panel({
-  children,
-  className = "",
-  testId,
-}: {
-  children: React.ReactNode;
-  className?: string;
-  testId?: string;
-}) {
-  return (
-    <section
-      data-testid={testId}
-      className={`border border-border/70 bg-card/50 animate-in fade-in slide-in-from-bottom-2 duration-500 ${className}`}
-    >
-      {children}
-    </section>
-  );
-}
-
 export function BenchMateApp() {
   const [health, setHealth] = useState<Health | null>(null);
-  const [sampleId, setSampleId] = useState<LabSampleId>("beers-law");
+  const [sampleId, setSampleId] = useState<LabSampleId>("colony-plate");
   const [images, setImages] = useState<ImageItem[]>([]);
   const [stage, setStage] = useState<
     "upload" | "running" | "confirm" | "done" | "error"
@@ -92,6 +96,9 @@ export function BenchMateApp() {
   const [verification, setVerification] = useState<VerificationResult | null>(null);
   const [report, setReport] = useState<LabReport | null>(null);
   const [showBoxes, setShowBoxes] = useState(true);
+  const [traceEvents, setTraceEvents] = useState<TraceEvent[]>([]);
+  const [deviations, setDeviations] = useState<ProtocolDeviation[]>([]);
+  const [orchestratorModel, setOrchestratorModel] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("/api/health")
@@ -113,7 +120,7 @@ export function BenchMateApp() {
   }, []);
 
   useEffect(() => {
-    void loadSample("beers-law");
+    void loadSample("colony-plate");
   }, [loadSample]);
 
   const onFiles = async (files: FileList | null) => {
@@ -126,6 +133,34 @@ export function BenchMateApp() {
     setImages(items);
   };
 
+  const mapTraceToPipeline = (ev: TraceEvent) => {
+    if (ev.role === "sam_quantifier" || ev.role === "spark_readout") {
+      setPipelineStage("extract");
+      if (ev.kind === "specialist_done" && ev.role === "spark_readout") {
+        setDoneThrough("extract");
+        setProgress(35);
+      }
+    } else if (ev.role === "calc_agent") {
+      setPipelineStage("compute");
+      if (ev.kind === "specialist_done") {
+        setDoneThrough("compute");
+        setProgress(55);
+      }
+    } else if (ev.role === "protocol_check" || ev.role === "verifier" || ev.role === "critic") {
+      setPipelineStage("verify");
+      if (ev.kind === "specialist_done" && ev.role === "verifier") {
+        setDoneThrough("verify");
+        setProgress(78);
+      }
+    } else if (ev.role === "report_writer" || ev.kind === "report") {
+      setPipelineStage("report");
+      setProgress(92);
+    } else if (ev.kind === "done") {
+      setDoneThrough("report");
+      setProgress(100);
+    }
+  };
+
   const runPipeline = async () => {
     if (!images.length) return;
     setError(null);
@@ -134,62 +169,114 @@ export function BenchMateApp() {
     setAgent(null);
     setVerification(null);
     setExtraction(null);
+    setTraceEvents([]);
+    setDeviations([]);
+    setOrchestratorModel(null);
+    setPipelineStage("extract");
+    setDoneThrough(null);
+    setProgress(8);
+    setStatusText("Muse Wonder orchestrating specialists…");
 
     try {
-      setPipelineStage("extract");
-      setDoneThrough(null);
-      setProgress(12);
-      setStatusText("Muse Spark vision: transcribing readouts → structured JSON…");
-      const extractRes = await fetch("/api/extract", {
+      setStatusText(
+        sampleId === "colony-plate"
+          ? "Wonder → SAM colony quantifier → CFU/mL…"
+          : sampleId === "dilution-error"
+            ? "Wonder → protocol check for 10× dilution catch…"
+            : "Muse Wonder orchestrating specialists…",
+      );
+      const res = await fetch("/api/orchestrate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           images,
           sampleId,
-          enableSegmentation: true,
+          writeReport: true,
         }),
       });
-      const extractJson = await extractRes.json();
-      if (!extractRes.ok) throw new Error(extractJson.error ?? "Extract failed");
-      let currentExtraction = extractJson.extraction as ExtractionResult;
-      setExtraction(currentExtraction);
-      setDoneThrough("extract");
-      setProgress(35);
+      if (!res.ok || !res.body) {
+        const j = await res.json().catch(() => ({}));
+        throw new Error(j.error ?? `Orchestrate failed (${res.status})`);
+      }
 
-      setPipelineStage("compute");
-      setStatusText("Tool-using agent: unit conversion, regression, stoichiometry…");
-      const agentRes = await fetch("/api/agent", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ extraction: currentExtraction, sampleId }),
-      });
-      const agentJson = await agentRes.json();
-      if (!agentRes.ok) throw new Error(agentJson.error ?? "Agent failed");
-      const currentAgent = agentJson.agent as AgentResult;
-      setAgent(currentAgent);
-      setDoneThrough("compute");
-      setProgress(58);
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+      let gotResult = false;
 
-      setPipelineStage("verify");
-      setStatusText("Verifier pass: checking values vs images…");
-      const verifyRes = await fetch("/api/verify", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          extraction: currentExtraction,
-          images,
-          sampleId,
-        }),
-      });
-      const verifyJson = await verifyRes.json();
-      if (!verifyRes.ok) throw new Error(verifyJson.error ?? "Verify failed");
-      currentExtraction = verifyJson.extraction as ExtractionResult;
-      setExtraction(currentExtraction);
-      setVerification(verifyJson.verification as VerificationResult);
-      setDoneThrough("verify");
-      setProgress(78);
-      setStage("confirm");
-      setStatusText("Confirm flagged cells, then generate the report.");
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const chunks = buffer.split("\n\n");
+        buffer = chunks.pop() ?? "";
+
+        for (const chunk of chunks) {
+          const lines = chunk.split("\n");
+          let eventName = "message";
+          let dataLine = "";
+          for (const line of lines) {
+            if (line.startsWith("event:")) eventName = line.slice(6).trim();
+            if (line.startsWith("data:")) dataLine += line.slice(5).trim();
+          }
+          if (!dataLine) continue;
+          const data = JSON.parse(dataLine) as Record<string, unknown>;
+
+          if (eventName === "trace") {
+            const ev = data as unknown as TraceEvent;
+            setTraceEvents((prev) => [...prev, ev]);
+            mapTraceToPipeline(ev);
+            setStatusText(ev.title);
+            if (ev.kind === "protocol_deviation") {
+              const fromPayload = ev.payload as unknown as ProtocolDeviation | undefined;
+              setDeviations((prev) => [
+                ...prev,
+                fromPayload ?? {
+                  id: ev.id,
+                  code: "PROTOCOL",
+                  severity: "error" as const,
+                  message: ev.title,
+                  expected: {},
+                  observed: {},
+                },
+              ]);
+            }
+          } else if (eventName === "result") {
+            gotResult = true;
+            const extractionResult = data.extraction as ExtractionResult;
+            const agentResult = data.agent as AgentResult;
+            const verificationResult = data.verification as VerificationResult;
+            const reportResult = data.report as LabReport | undefined;
+            setExtraction(extractionResult);
+            setAgent(agentResult);
+            setVerification(verificationResult);
+            setDeviations((data.deviations as ProtocolDeviation[]) ?? []);
+            setOrchestratorModel((data.orchestratorModel as string) ?? "muse-wonder-1.0");
+            if (reportResult) {
+              setReport(reportResult);
+              setDoneThrough("report");
+              setProgress(100);
+              setStage("done");
+              setStatusText(
+                ((data.deviations as ProtocolDeviation[])?.length ?? 0) > 0
+                  ? "Protocol deviation caught — report ready."
+                  : "Report ready.",
+              );
+            } else {
+              setDoneThrough("verify");
+              setProgress(78);
+              setStage("confirm");
+              setStatusText("Confirm flagged cells, then generate the report.");
+            }
+          } else if (eventName === "error") {
+            throw new Error((data.error as string) ?? "Orchestration failed");
+          }
+        }
+      }
+
+      if (!gotResult) {
+        throw new Error("Orchestration stream ended without a result");
+      }
     } catch (err) {
       setStage("error");
       setError(err instanceof Error ? err.message : String(err));
@@ -278,7 +365,15 @@ export function BenchMateApp() {
         id,
         ...SAMPLE_META[id],
         icon:
-          id === "beers-law" ? FlaskConical : id === "titration" ? Beaker : Scale,
+          id === "beers-law"
+            ? FlaskConical
+            : id === "titration"
+              ? Beaker
+              : id === "colony-plate"
+                ? CircleDot
+                : id === "dilution-error"
+                  ? AlertTriangle
+                : Scale,
       })),
     [],
   );
@@ -290,16 +385,21 @@ export function BenchMateApp() {
         !m.userConfirmed,
     ).length ?? 0;
 
+
   const loaderContext =
-    pipelineStage === "extract"
+    sampleId === "colony-plate"
       ? "extract"
-      : pipelineStage === "compute"
-        ? "compute"
-        : pipelineStage === "verify"
-          ? "verify"
-          : pipelineStage === "report"
-            ? "report"
-            : "rotate";
+      : sampleId === "dilution-error"
+        ? "verify"
+        : pipelineStage === "extract"
+          ? "extract"
+          : pipelineStage === "compute"
+            ? "compute"
+            : pipelineStage === "verify"
+              ? "verify"
+              : pipelineStage === "report"
+                ? "report"
+                : "rotate";
 
   return (
     <div className="relative min-h-screen overflow-x-hidden bg-background text-foreground">
@@ -328,7 +428,6 @@ export function BenchMateApp() {
       </header>
 
       <main className="mx-auto max-w-6xl px-4 pb-20 pt-8 md:px-6">
-        {/* Hero — one composition, brand-first */}
         <section className="relative mb-14 min-h-[70vh] border border-border/50 bg-[#080809]/80 animate-in fade-in duration-700 md:min-h-[78vh]">
           <div className="pointer-events-none absolute inset-0 bm-noise opacity-40" />
           <div className="relative flex min-h-[70vh] flex-col justify-between gap-10 p-6 md:min-h-[78vh] md:p-12">
@@ -338,18 +437,20 @@ export function BenchMateApp() {
                 className="max-w-full animate-in fade-in slide-in-from-bottom-3 duration-700"
               />
               <div className="hidden shrink-0 opacity-80 md:block animate-in fade-in duration-1000">
-                <AsciiBio context="rotate" showLabel />
+                <AsciiBio
+                  context={sampleId === "colony-plate" ? "extract" : "rotate"}
+                  showLabel
+                />
               </div>
             </div>
 
             <div className="max-w-xl space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-700 delay-150">
               <h1 className="text-base leading-relaxed text-foreground/90 md:text-lg">
-                Photos of handwritten notebooks and instrument readouts → a verified, formatted
-                lab report.
+                SAM 3.1 colony counting + instrument OCR → a verified, formatted lab report.
               </h1>
               <p className="text-sm text-muted-foreground">
-                Vision extraction · deterministic chemistry tools · verifier · report writer. Not a
-                chatbot.
+                Muse Wonder orchestrates SAM colony counting + Spark readout, catches protocol
+                deviations, and writes the record — live agent trace included.
               </p>
               <div className="pt-2">
                 <Button
@@ -383,7 +484,7 @@ export function BenchMateApp() {
           </div>
 
           {stage === "running" && (
-            <AsciiLoader context={loaderContext} status={statusText} />
+            <AsciiLoader context={loaderContext as "extract" | "compute" | "verify" | "report" | "rotate"} status={statusText} />
           )}
 
           {error && (
@@ -411,16 +512,44 @@ export function BenchMateApp() {
             {statusText}
           </div>
 
-          {/* Upload / samples */}
+          {(traceEvents.length > 0 || stage === "running") && (
+            <AgentTracePanel
+              events={traceEvents}
+              running={stage === "running"}
+              deviations={deviations}
+            />
+          )}
+
+          {deviations.length > 0 && (
+            <Alert
+              variant="destructive"
+              data-testid="dilution-wow-alert"
+              className="border-destructive/50 bg-destructive/10"
+            >
+              <AlertTriangle className="size-4" />
+              <AlertTitle>
+                Wow moment — protocol deviation
+                {deviations[0].factor ? ` (${deviations[0].factor}×)` : ""}
+              </AlertTitle>
+              <AlertDescription className="space-y-1">
+                <p>{deviations[0].message}</p>
+                {deviations[0].suggestion && (
+                  <p className="text-sm opacity-90">{deviations[0].suggestion}</p>
+                )}
+              </AlertDescription>
+            </Alert>
+          )}
+
           <Panel>
             <div className="border-b border-border/50 px-5 py-4">
               <FigletSectionTitle section="photos" />
               <p className="mt-2 text-xs text-muted-foreground">
-                Upload notebook / instrument photos, or load a built-in demo sample.
+                Upload photos or load a demo — try Petri Dish — Colony CFU Count or Serial Dilution —
+                10× Protocol Catch.
               </p>
             </div>
             <div className="space-y-5 p-5">
-              <div className="grid gap-3 sm:grid-cols-3">
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
                 {sampleCards.map((s) => {
                   const Icon = s.icon;
                   return (
@@ -455,7 +584,7 @@ export function BenchMateApp() {
                 <ImagePlus className="size-5 text-accent" />
                 <span className="text-sm">Drop photos or click to upload</span>
                 <span className="text-xs text-muted-foreground">
-                  PNG / JPEG · notebook pages, screens, burettes
+                  PNG / JPEG · notebook pages, screens, burettes, plates
                 </span>
               </label>
 
@@ -481,17 +610,21 @@ export function BenchMateApp() {
                 >
                   {stage === "running" && pipelineStage !== "report" ? (
                     <>
-                      <Loader2 className="size-4 animate-spin" /> Running agent…
+                      <Loader2 className="size-4 animate-spin" /> Wonder orchestrating…
                     </>
                   ) : (
-                    <>$ run pipeline</>
+                    <>$ run wonder</>
                   )}
                 </Button>
+                {orchestratorModel && (
+                  <Badge variant="outline" className="font-mono text-[10px]">
+                    orchestrator: {orchestratorModel}
+                  </Badge>
+                )}
               </div>
             </div>
           </Panel>
 
-          {/* Extraction + boxes */}
           {extraction && (
             <Panel>
               <div className="border-b border-border/50 px-5 py-4">
@@ -529,7 +662,6 @@ export function BenchMateApp() {
             </Panel>
           )}
 
-          {/* Agent tools — terminal trace */}
           {agent && (
             <Panel>
               <div className="border-b border-border/50 px-5 py-4">
@@ -537,7 +669,23 @@ export function BenchMateApp() {
                 <p className="mt-2 text-xs text-muted-foreground">{agent.plan}</p>
               </div>
               <div className="space-y-4 p-5">
-                <AgentTerminal agent={agent} />
+                <div className="space-y-2" data-testid="agent-steps">
+                  {agent.steps
+                    .filter((s) => s.type === "tool_call")
+                    .map((s) => (
+                      <div
+                        key={s.id}
+                        className="border border-border/70 bg-muted/30 px-3 py-2 font-mono text-xs"
+                      >
+                        <span className="text-accent">→ {s.toolName}</span>
+                        <span className="text-muted-foreground">
+                          {" "}
+                          {JSON.stringify(s.toolInput).slice(0, 120)}
+                          …
+                        </span>
+                      </div>
+                    ))}
+                </div>
                 <div className="grid gap-2 sm:grid-cols-2" data-testid="computed-values">
                   {agent.computed.map((c) => (
                     <div key={c.id} className="border border-border/60 px-3 py-3">
@@ -552,16 +700,6 @@ export function BenchMateApp() {
                     </div>
                   ))}
                 </div>
-                {/* keep legacy selector for tests that look at agent-steps */}
-                <div className="sr-only" data-testid="agent-steps">
-                  {agent.steps
-                    .filter((s) => s.type === "tool_call")
-                    .map((s) => (
-                      <div key={s.id}>
-                        {s.toolName} {JSON.stringify(s.toolInput)}
-                      </div>
-                    ))}
-                </div>
                 {agent.chartSeries?.[0] && (
                   <CalibrationChart series={agent.chartSeries[0]} />
                 )}
@@ -569,7 +707,6 @@ export function BenchMateApp() {
             </Panel>
           )}
 
-          {/* Verify / confirm */}
           {verification && extraction && (
             <Panel testId="verify-panel">
               <div className="border-b border-border/50 px-5 py-4">
@@ -620,7 +757,6 @@ export function BenchMateApp() {
             </Panel>
           )}
 
-          {/* Report */}
           {report && (
             <Panel testId="report-panel">
               <div className="flex flex-row flex-wrap items-start justify-between gap-3 border-b border-border/50 px-5 py-4">

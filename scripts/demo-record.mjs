@@ -1,5 +1,7 @@
 /**
  * Scripted DEMO_MODE walkthrough (~3 min) with caption overlays.
+ * Films Core colony CFU (SAM masks) + Orchestration Serial Dilution 10× wow
+ * (live agent trace + protocol deviation banner), then report / accuracy close.
  * Saves video + screenshots under artifacts/ and /opt/cursor/artifacts/
  */
 import { chromium } from "playwright";
@@ -91,6 +93,17 @@ async function shot(page, name) {
   console.log("screenshot", name);
 }
 
+async function runSample(page, sampleId, label) {
+  await page.locator("#workspace").scrollIntoViewIfNeeded();
+  await setCaption(page, label);
+  await page.getByTestId(`sample-${sampleId}`).click();
+  await page.waitForTimeout(2000);
+  await setCaption(page, `Run pipeline · ${sampleId}`);
+  await page.getByTestId("run-pipeline").click();
+  // Orchestrate may render measurement tables in both extract + verify panels
+  await page.getByTestId("measurement-table").first().waitFor({ timeout: 180000 });
+}
+
 async function main() {
   let server = null;
   let startedHere = false;
@@ -118,95 +131,130 @@ async function main() {
   const elapsed = () => ((Date.now() - t0) / 1000).toFixed(1);
 
   await page.goto(BASE, { waitUntil: "networkidle" });
-  await setCaption(page, "BenchMate · Meta Global AI Developer Hackathon");
-  await page.waitForTimeout(4000);
-  await shot(page, "01-hero.png");
 
+  // ── 0:00–0:20 pain (no build tooling) ──
+  await setCaption(page, "Wrong dilution can ruin the plate");
+  await page.waitForTimeout(5000);
+  await page.locator("#workspace").scrollIntoViewIfNeeded();
+  await shot(page, "01-pain.png");
   await setCaption(
     page,
-    "Problem: handwritten notebooks + instrument screens → verified reports",
+    "Miscounted colonies · 10× pipetting error · wasted culture — wet-lab trainees need a partner",
   );
   await page.waitForTimeout(5000);
   await shot(page, "02-problem.png");
 
-  await page.locator("#workspace").scrollIntoViewIfNeeded();
-  await setCaption(page, "DEMO_MODE · Load Beer's law CuSO₄ sample");
-  await page.getByTestId("sample-beers-law").click();
-  await page.waitForTimeout(2500);
-  await shot(page, "03-sample-selected.png");
+  await page.locator("header").scrollIntoViewIfNeeded();
+  await setCaption(page, "BenchMate · AI lab partner that watches your bench");
+  await page.waitForTimeout(3000);
+  await shot(page, "03-hero.png");
 
-  await setCaption(page, "Run agentic pipeline (vision → tools → verify → report)");
-  await page.getByTestId("run-pipeline").click();
-
-  // Prefer success path; if live API errors, fall back to DEMO_MODE reload once
-  try {
-    await page.getByTestId("measurement-table").waitFor({ timeout: 180000 });
-  } catch {
-    console.warn("Live pipeline slow/failed — restarting page with DEMO_MODE hint via fixture path");
-    await page.goto(`${BASE}?demo=1`, { waitUntil: "networkidle" });
-    await setCaption(page, "DEMO_MODE fallback fixtures (live path available with META_API_KEY)");
-    await page.getByTestId("sample-beers-law").click();
-    await page.waitForTimeout(1500);
-    await page.getByTestId("run-pipeline").click();
-    await page.getByTestId("measurement-table").waitFor({ timeout: 120000 });
-  }
-  await setCaption(page, "Vision: Muse Spark extracts units + sig figs");
-  await page.waitForTimeout(4000);
-  await page.getByTestId("bbox-overlay").scrollIntoViewIfNeeded();
-  await shot(page, "04-vision-bboxes.png");
+  // ── Colony CFU + SAM masks ──
+  await runSample(
+    page,
+    "colony-plate",
+    "Petri Dish — Colony CFU Count (SAM 3.1 hero)",
+  );
+  await setCaption(page, "SAM 3.1 colony masks — count what you see on the plate");
   await page.waitForTimeout(3500);
+  if (await page.getByTestId("bbox-overlay").count()) {
+    await page.getByTestId("bbox-overlay").scrollIntoViewIfNeeded();
+  }
+  await shot(page, "04-colony-masks.png");
+  await page.waitForTimeout(2500);
 
-  await page.getByTestId("agent-steps").waitFor({ timeout: 240000 });
+  if (await page.getByTestId("computed-values").count()) {
+    await setCaption(page, "compute_cfu: N=42 · V=0.1 mL · D=10⁻⁴ → 4.2×10⁶ CFU/mL");
+    await page.getByTestId("computed-values").scrollIntoViewIfNeeded();
+    await page.waitForTimeout(3000);
+    await shot(page, "05-colony-cfu.png");
+  }
+
+  // ── Serial Dilution 10× wow + live agent trace (through ~1:30) ──
+  await runSample(
+    page,
+    "dilution-error",
+    "Serial Dilution — 10× Protocol Catch (wow)",
+  );
+
+  await page.getByTestId("agent-trace-panel").waitFor({ timeout: 120000 });
+  await setCaption(page, "Live agent trace — Muse Wonder orchestrates specialists");
+  await page.getByTestId("agent-trace-panel").scrollIntoViewIfNeeded();
+  await page.waitForTimeout(4000);
+  await shot(page, "06-agent-trace.png");
+
+  // Protocol deviation banner / wow alert
+  const wow = page.getByTestId("dilution-wow-alert").or(page.getByTestId("protocol-deviation-banner"));
+  await wow.first().waitFor({ timeout: 60000 });
   await setCaption(
     page,
-    "Tools: linear_regression · beers_law_concentration — code, not LLM math",
+    "PROTOCOL DEVIATION: 10× dilution error — 1.0 mL pipetted, protocol needs 10.0 mL",
   );
-  await page.getByTestId("computed-values").scrollIntoViewIfNeeded();
-  await page.waitForTimeout(4000);
-  await shot(page, "05-tools-computed.png");
-
-  if (await page.getByTestId("calibration-chart").count()) {
-    await page.getByTestId("calibration-chart").scrollIntoViewIfNeeded();
-    await page.waitForTimeout(3500);
-    await shot(page, "06-calibration-chart.png");
-  }
-
-  await page.getByTestId("verify-panel").waitFor({ timeout: 240000 });
-  await setCaption(page, "Verifier: second Muse pass flags inconsistencies");
-  await page.getByTestId("verify-panel").scrollIntoViewIfNeeded();
-  await page.waitForTimeout(4000);
-  await shot(page, "07-verifier.png");
-
-  await setCaption(page, "Confirm flagged cells");
-  await page.getByTestId("confirm-all").click();
-  await page.waitForTimeout(2000);
-
-  await setCaption(page, "Report writer: Introduction → Conclusion");
-  await page.getByTestId("generate-report").click();
-  await page.getByTestId("report-panel").waitFor({ timeout: 240000 });
-  await page.getByTestId("report-markdown").scrollIntoViewIfNeeded();
+  await wow.first().scrollIntoViewIfNeeded();
   await page.waitForTimeout(5000);
-  await shot(page, "08-report.png");
+  await shot(page, "07-protocol-deviation.png");
 
-  await setCaption(page, "Export Markdown · PDF · DOCX with tool citations");
-  await page.getByTestId("export-md").click();
-  await page.waitForTimeout(2000);
-  await page.getByTestId("export-pdf").click();
-  await page.waitForTimeout(2500);
-
-  // Pad to ~3 minutes if needed
-  const soFar = Date.now() - t0;
-  const targetMs = 170_000;
-  if (soFar < targetMs) {
-    await setCaption(
-      page,
-      "BenchMate · Muse Spark + deterministic tools · MIT · Camron Farjami (U-M)",
-    );
-    await page.locator("header").scrollIntoViewIfNeeded();
-    await page.waitForTimeout(targetMs - soFar);
+  if (await page.getByTestId("computed-values").count()) {
+    await page.getByTestId("computed-values").scrollIntoViewIfNeeded();
+    await page.waitForTimeout(2500);
+    await shot(page, "08-dilution-math.png");
   }
 
-  await shot(page, "09-close.png");
+  // ── Report + accuracy (~1:30–2:15) ──
+  // Orchestrate may already write the report; otherwise confirm → generate
+  if (await page.getByTestId("report-panel").count()) {
+    await setCaption(page, "Verified report · tool-cited Results · deviation logged");
+    await page.getByTestId("report-panel").scrollIntoViewIfNeeded();
+    await page.waitForTimeout(4000);
+    await shot(page, "09-report.png");
+  } else {
+    if (await page.getByTestId("confirm-all").count()) {
+      await setCaption(page, "Trainee confirms flagged cells");
+      await page.getByTestId("confirm-all").click();
+      await page.waitForTimeout(1500);
+    }
+    if (await page.getByTestId("generate-report").count()) {
+      await page.getByTestId("generate-report").click();
+    }
+    await page.getByTestId("report-panel").waitFor({ timeout: 120000 });
+    await setCaption(page, "Verified report · tool-cited Results · deviation logged");
+    await page.getByTestId("report-markdown").scrollIntoViewIfNeeded();
+    await page.waitForTimeout(4000);
+    await shot(page, "09-report.png");
+  }
+
+  await setCaption(
+    page,
+    "Accuracy: CFU 4.2×10⁶ · dilution 10× catch · deterministic tools",
+  );
+  await page.waitForTimeout(4000);
+  if (await page.getByTestId("export-pdf").count()) {
+    await page.getByTestId("export-pdf").click();
+    await page.waitForTimeout(2000);
+  }
+  await shot(page, "10-accuracy-export.png");
+
+  // ── Model roles + close ──
+  await setCaption(
+    page,
+    "Wonder orchestrates · Spark sees/plans/verifies/writes · SAM 3.1 segments · tools own the math",
+  );
+  await page.locator("header").scrollIntoViewIfNeeded();
+  await page.waitForTimeout(7000);
+  await shot(page, "11-model-roles.png");
+
+  const soFar = Date.now() - t0;
+  const targetMs = 165_000;
+  await setCaption(
+    page,
+    "Build for Your World — accelerate scientific experiments · BenchMate · MIT",
+  );
+  if (soFar < targetMs) {
+    await page.waitForTimeout(targetMs - soFar);
+  } else {
+    await page.waitForTimeout(4000);
+  }
+  await shot(page, "12-close.png");
   console.log(`Demo timeline ${elapsed()}s`);
 
   const videoPath = await page.video()?.path();
@@ -223,12 +271,20 @@ async function main() {
     }
     console.log("Saved", webmOut);
 
-    // Best-effort mp4 via ffmpeg if present
     try {
       await new Promise((resolve, reject) => {
         const ff = spawn(
           "ffmpeg",
-          ["-y", "-i", webmOut, "-c:v", "libx264", "-pix_fmt", "yuv420p", join(artifacts, "benchmate-demo.mp4")],
+          [
+            "-y",
+            "-i",
+            webmOut,
+            "-c:v",
+            "libx264",
+            "-pix_fmt",
+            "yuv420p",
+            join(artifacts, "benchmate-demo.mp4"),
+          ],
           { stdio: "inherit" },
         );
         ff.on("exit", (code) => (code === 0 ? resolve() : reject(new Error("ffmpeg " + code))));
@@ -252,16 +308,20 @@ async function main() {
         recordedAt: new Date().toISOString(),
         durationSecApprox: Number(elapsed()),
         baseUrl: BASE,
+        samples: ["colony-plate", "dilution-error"],
         screenshots: [
-          "01-hero.png",
+          "01-pain.png",
           "02-problem.png",
-          "03-sample-selected.png",
-          "04-vision-bboxes.png",
-          "05-tools-computed.png",
-          "06-calibration-chart.png",
-          "07-verifier.png",
-          "08-report.png",
-          "09-close.png",
+          "03-hero.png",
+          "04-colony-masks.png",
+          "05-colony-cfu.png",
+          "06-agent-trace.png",
+          "07-protocol-deviation.png",
+          "08-dilution-math.png",
+          "09-report.png",
+          "10-accuracy-export.png",
+          "11-model-roles.png",
+          "12-close.png",
         ],
         video: "benchmate-demo.webm",
       },

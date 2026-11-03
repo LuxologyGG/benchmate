@@ -106,12 +106,107 @@ const balanceScreen = `
   <text x="140" y="560" fill="#667" font-family="sans-serif" font-size="12">BenchMate demo fixture — analytical balance</text>
 </svg>`;
 
+/** Deterministic colony positions matching src/lib/demo/colony-fixtures.ts (42 colonies). */
+function hash01(i) {
+  const x = Math.sin(i * 127.1 + 311.7) * 43758.5453;
+  return x - Math.floor(x);
+}
+
+function buildColonyPlateSvg() {
+  const W = 960;
+  const H = 960;
+  const cx = W * 0.5;
+  const cy = H * 0.48;
+  const R = W * 0.36;
+  const colonies = [];
+  const rings = [
+    { n: 1, r: 0.02 },
+    { n: 6, r: 0.12 },
+    { n: 12, r: 0.22 },
+    { n: 14, r: 0.3 },
+    { n: 9, r: 0.35 },
+  ];
+  let i = 0;
+  for (const ring of rings) {
+    for (let k = 0; k < ring.n; k++) {
+      if (colonies.length >= 42) break;
+      const angle = (2 * Math.PI * k) / ring.n + hash01(i) * 0.2;
+      const rr = ring.r * (0.92 + hash01(i + 3) * 0.16);
+      const x = 0.5 + rr * Math.cos(angle);
+      const y = 0.48 + rr * Math.sin(angle);
+      const size = 0.012 + hash01(i + 7) * 0.018;
+      const dx = x - 0.5;
+      const dy = y - 0.48;
+      if (Math.sqrt(dx * dx + dy * dy) + size > 0.36) {
+        i++;
+        continue;
+      }
+      colonies.push({ x, y, size, shade: 40 + hash01(i + 19) * 50 });
+      i++;
+    }
+  }
+  while (colonies.length < 42) {
+    const t = colonies.length;
+    const angle = hash01(t + 50) * 2 * Math.PI;
+    const rr = 0.08 + hash01(t + 60) * 0.24;
+    colonies.push({
+      x: 0.5 + rr * Math.cos(angle),
+      y: 0.48 + rr * Math.sin(angle),
+      size: 0.014,
+      shade: 55,
+    });
+  }
+  const dots = colonies
+    .slice(0, 42)
+    .map((c) => {
+      const px = c.x * W;
+      const py = c.y * H;
+      const r = c.size * W * 0.55;
+      const fill = `rgb(${90 + c.shade * 0.3},${40 + c.shade * 0.2},${30})`;
+      return `<circle cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" r="${r.toFixed(1)}" fill="${fill}" opacity="0.92"/>`;
+    })
+    .join("\n  ");
+
+  return `
+<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}">
+  <defs>
+    <radialGradient id="agar" cx="50%" cy="48%" r="55%">
+      <stop offset="0%" stop-color="#f0e6c8"/>
+      <stop offset="70%" stop-color="#e2d4a8"/>
+      <stop offset="100%" stop-color="#cbb888"/>
+    </radialGradient>
+  </defs>
+  <rect width="${W}" height="${H}" fill="#2a3328"/>
+  <circle cx="${cx}" cy="${cy}" r="${R + 18}" fill="#d8dde0" stroke="#8a9299" stroke-width="10"/>
+  <circle cx="${cx}" cy="${cy}" r="${R}" fill="url(#agar)" stroke="#b0a070" stroke-width="3"/>
+  ${dots}
+  <text x="48" y="900" fill="#e8efe4" font-family="sans-serif" font-size="22" font-weight="700">LB agar · E. coli · 10⁻⁴ dilution</text>
+  <text x="48" y="932" fill="#a8b8a4" font-family="sans-serif" font-size="13">BenchMate demo fixture — petri dish colony plate (42 colonies)</text>
+</svg>`;
+}
+
+const colonyLabel = `
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="540">
+  <rect width="960" height="540" fill="#f4f1ea"/>
+  <rect x="48" y="40" width="864" height="460" fill="#fffdf8" stroke="#cfc6b4"/>
+  <text x="80" y="100" fill="#1e3a5f" font-family="Georgia, serif" font-size="28" font-style="italic">Plate metadata</text>
+  <text x="80" y="160" fill="#222" font-family="Comic Sans MS, cursive" font-size="22">Organism: E. coli K-12</text>
+  <text x="80" y="210" fill="#222" font-family="Comic Sans MS, cursive" font-size="22">Medium: LB agar</text>
+  <text x="80" y="260" fill="#222" font-family="Comic Sans MS, cursive" font-size="22">Dilution: 1×10⁻⁴</text>
+  <text x="80" y="310" fill="#222" font-family="Comic Sans MS, cursive" font-size="22">Volume plated: 0.10 mL</text>
+  <text x="80" y="360" fill="#222" font-family="Comic Sans MS, cursive" font-size="22">Incubation: 37 °C · 18 h</text>
+  <text x="80" y="430" fill="#1e3a5f" font-family="Comic Sans MS, cursive" font-size="20">Expected: count colonies → CFU/mL = N/(V×D)</text>
+  <text x="80" y="480" fill="#888" font-family="sans-serif" font-size="12">BenchMate demo fixture — colony plate label</text>
+</svg>`;
+
 await Promise.all([
   svgToPng("beers-law-spectrophotometer.png", beersSpec),
   svgToPng("beers-law-notebook.png", beersNotebook),
   svgToPng("titration-burette.png", titrationBurette),
   svgToPng("titration-notebook.png", titrationNotebook),
   svgToPng("balance-screen.png", balanceScreen),
+  svgToPng("colony-plate.png", buildColonyPlateSvg()),
+  svgToPng("colony-plate-label.png", colonyLabel),
 ]);
 
 // Also copy fixture JSON sidecars
@@ -119,6 +214,7 @@ const fixturesDir = join(__dirname, "..", "fixtures");
 mkdirSync(join(fixturesDir, "beers-law"), { recursive: true });
 mkdirSync(join(fixturesDir, "titration"), { recursive: true });
 mkdirSync(join(fixturesDir, "balance"), { recursive: true });
+mkdirSync(join(fixturesDir, "colony-plate"), { recursive: true });
 
 writeFileSync(
   join(fixturesDir, "beers-law", "README.md"),
@@ -131,6 +227,19 @@ writeFileSync(
 writeFileSync(
   join(fixturesDir, "balance", "README.md"),
   "# Balance fixture\n\nSample image in `/public/samples/balance-screen.png`.\n",
+);
+writeFileSync(
+  join(fixturesDir, "colony-plate", "README.md"),
+  `# Colony plate fixture (hero)
+
+Sample images:
+- \`/public/samples/colony-plate.png\` — 42 colonies on LB agar
+- \`/public/samples/colony-plate-label.png\` — dilution / volume metadata
+
+Ground truth: N=42, V=0.1 mL, D=1e-4 → **CFU/mL = 4.2×10⁶**
+
+DEMO_MODE uses fixture SAM segmentations in \`src/lib/demo/colony-fixtures.ts\` and deterministic \`compute_cfu\`.
+`,
 );
 
 console.log("Sample generation complete.");

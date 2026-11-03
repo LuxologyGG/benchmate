@@ -25,6 +25,16 @@ export function getMetaModelId(): string {
   return env("META_MODEL") || env("META_MODEL_ID") || "muse-spark-1.3";
 }
 
+/** Muse Spark 1.3 — specialist vision / calc / report work. */
+export function getSparkModelId(): string {
+  return env("META_SPARK_MODEL") || getMetaModelId() || META_DEFAULTS.museSpark;
+}
+
+/** Muse Wonder 1.0 — in-product orchestrator (plan, dispatch, resolve, report). */
+export function getWonderModelId(): string {
+  return env("META_WONDER_MODEL") || META_DEFAULTS.museWonder;
+}
+
 /** Meta SAM 3.1 Segment endpoint helpers (OpenAI-compatible Model API surface). */
 export function getSamModelId(): string {
   return env("META_SAM_MODEL_ID", "sam-3.1");

@@ -6,7 +6,15 @@ import type {
   VerificationResult,
 } from "@/lib/types";
 import {
+  DEMO_COLONY_COUNT,
+  DEMO_COLONY_EXPECTED_CFU,
+  getDemoColonyParams,
+  getDemoColonySegmentations,
+} from "@/lib/demo/colony-fixtures";
+import {
   beersLawConcentration,
+  computeCfu,
+  dilution,
   linearRegression,
   molarity,
   percentError,
@@ -38,6 +46,24 @@ export const SAMPLE_META: Record<
     title: "Analytical Balance — Salt Masses",
     description: "Digital balance screen with solid sample masses for molarity prep.",
     imageFiles: ["/samples/balance-screen.png"],
+  },
+  "colony-plate": {
+    title: "Petri Dish — Colony CFU Count",
+    description:
+      "SAM 3.1 segments colonies; deterministic code counts, areas, and CFU/mL (hero demo).",
+    imageFiles: [
+      "/samples/colony-plate.png",
+      "/samples/colony-plate-label.png",
+    ],
+  },
+  "dilution-error": {
+    title: "Serial Dilution — 10× Protocol Catch",
+    description:
+      "Wow demo: notebook shows 1.0 mL stock into 100 mL (should be 10.0 mL) — BenchMate catches the 10× error.",
+    imageFiles: [
+      "/samples/balance-screen.png",
+      "/samples/beers-law-notebook.png",
+    ],
   },
 };
 
@@ -421,6 +447,236 @@ function balanceExtraction(): ExtractionResult {
   };
 }
 
+function colonyExtraction(): ExtractionResult {
+  const segs = getDemoColonySegmentations();
+  const params = getDemoColonyParams();
+  const cfu = computeCfu({
+    colonyCount: DEMO_COLONY_COUNT,
+    platedVolumeMl: params.platedVolumeMl ?? 0.1,
+    dilutionFactor: params.dilutionFactor ?? 1e-4,
+  });
+  const boxes = segs.map((s) => ({
+    id: s.id,
+    label: s.label,
+    x: s.bbox[0],
+    y: s.bbox[1],
+    width: s.bbox[2],
+    height: s.bbox[3],
+    confidence: s.score,
+  }));
+  const meanArea =
+    segs.reduce((a, s) => a + s.bbox[2] * s.bbox[3], 0) / Math.max(segs.length, 1);
+
+  return {
+    sampleId: "colony-plate",
+    experimentTitle: "E. coli colony counting on LB agar",
+    experimentType: "colony-count",
+    summary: `DEMO: SAM-style segmentation of ${DEMO_COLONY_COUNT} colonies. CFU/mL = ${DEMO_COLONY_EXPECTED_CFU.toExponential(2)} (V=${params.platedVolumeMl} mL, D=${params.dilutionFactor}).`,
+    provider: "demo",
+    model: "demo-fixture",
+    boundingBoxes: boxes,
+    tables: [
+      {
+        id: "colony-summary",
+        title: "Colony quantification",
+        headers: ["Metric", "Value"],
+        rows: [
+          ["Colony count", String(DEMO_COLONY_COUNT)],
+          ["Plated volume (mL)", String(params.platedVolumeMl)],
+          ["Dilution factor", String(params.dilutionFactor)],
+          ["CFU/mL", cfu.cfuPerMl.toExponential(3)],
+          ["Mean colony area (norm)", meanArea.toExponential(3)],
+        ],
+      },
+    ],
+    measurements: [
+      {
+        id: "c-count",
+        label: "Colony count",
+        value: DEMO_COLONY_COUNT,
+        unit: "colonies",
+        significantFigures: 2,
+        kind: "colony-count",
+        sourceImageId: "img-0",
+        rawText: String(DEMO_COLONY_COUNT),
+        confidence: 0.95,
+      },
+      {
+        id: "c-vol",
+        label: "Plated volume",
+        value: params.platedVolumeMl ?? 0.1,
+        unit: "mL",
+        significantFigures: 1,
+        kind: "volume",
+        sourceImageId: "img-1",
+        rawText: `${params.platedVolumeMl} mL`,
+        confidence: 0.99,
+      },
+      {
+        id: "c-dil",
+        label: "Dilution factor",
+        value: params.dilutionFactor ?? 1e-4,
+        unit: "",
+        significantFigures: 1,
+        kind: "other",
+        sourceImageId: "img-1",
+        rawText: String(params.dilutionFactor),
+        confidence: 0.99,
+      },
+      {
+        id: "c-cfu",
+        label: "CFU/mL",
+        value: cfu.cfuPerMl,
+        unit: "CFU/mL",
+        significantFigures: 2,
+        kind: "cfu",
+        sourceImageId: "img-0",
+        rawText: cfu.cfuPerMl.toExponential(2),
+        confidence: 0.94,
+        flagged: true,
+        flagReason: "Confirm dilution series label (10⁻⁴) matches plate metadata.",
+      },
+      {
+        id: "c-area",
+        label: "Mean colony area (normalized)",
+        value: meanArea,
+        unit: "norm²",
+        significantFigures: 3,
+        kind: "area",
+        sourceImageId: "img-0",
+        rawText: meanArea.toExponential(3),
+        confidence: 0.9,
+      },
+    ],
+    quantitation: {
+      mode: "colony",
+      colonyCount: DEMO_COLONY_COUNT,
+      cfuPerMl: cfu.cfuPerMl,
+      platedVolumeMl: params.platedVolumeMl,
+      dilutionFactor: params.dilutionFactor,
+      notes: ["DEMO_MODE fixture SAM segmentations"],
+    },
+  };
+}
+
+function dilutionErrorExtraction(): ExtractionResult {
+  return {
+    sampleId: "dilution-error",
+    experimentTitle: "Working Solution Prep — 1.0 M → 0.10 M CuSO₄",
+    experimentType: "other",
+    summary:
+      "Protocol: dilute 1.0 M stock to 0.10 M in a 100.0 mL volumetric flask (expect V1 = 10.0 mL). Notebook recorded V1 = 1.0 mL — a classic 10× pipetting error.",
+    provider: "demo",
+    model: "demo-fixture",
+    boundingBoxes: [
+      {
+        id: "bb-stock",
+        label: "Stock bottle label",
+        x: 0.15,
+        y: 0.2,
+        width: 0.35,
+        height: 0.25,
+        confidence: 0.93,
+      },
+      {
+        id: "bb-v1",
+        label: "Aliquot volume (notebook)",
+        x: 0.4,
+        y: 0.35,
+        width: 0.4,
+        height: 0.2,
+        confidence: 0.91,
+      },
+      {
+        id: "bb-flask",
+        label: "Volumetric flask",
+        x: 0.55,
+        y: 0.55,
+        width: 0.3,
+        height: 0.3,
+        confidence: 0.88,
+      },
+    ],
+    tables: [
+      {
+        id: "dilution-protocol",
+        title: "Dilution worksheet",
+        headers: ["Parameter", "Protocol", "Notebook"],
+        rows: [
+          ["Stock M1", "1.0 M", "1.0 M"],
+          ["Aliquot V1", "10.0 mL", "1.0 mL"],
+          ["Flask V2", "100.0 mL", "100.0 mL"],
+          ["Target M2", "0.10 M", "0.10 M (claimed)"],
+        ],
+      },
+    ],
+    measurements: [
+      {
+        id: "d-stock",
+        label: "Stock concentration M1",
+        value: 1.0,
+        unit: "M",
+        significantFigures: 2,
+        kind: "concentration",
+        sourceImageId: "img-0",
+        rawText: "1.0 M CuSO₄ stock",
+        confidence: 0.97,
+        boundingBoxId: "bb-stock",
+      },
+      {
+        id: "d-v1",
+        label: "Aliquot volume V1 (pipetted)",
+        value: 1.0,
+        unit: "mL",
+        significantFigures: 2,
+        kind: "volume",
+        sourceImageId: "img-1",
+        rawText: "V1 = 1.0 mL",
+        confidence: 0.94,
+        boundingBoxId: "bb-v1",
+        flagged: true,
+        flagReason: "Protocol expects 10.0 mL — suspected 10× dilution error.",
+      },
+      {
+        id: "d-v2",
+        label: "Volumetric flask V2",
+        value: 100.0,
+        unit: "mL",
+        significantFigures: 4,
+        kind: "volume",
+        sourceImageId: "img-1",
+        rawText: "100.0 mL flask",
+        confidence: 0.96,
+        boundingBoxId: "bb-flask",
+      },
+      {
+        id: "d-target",
+        label: "Protocol target M2",
+        value: 0.1,
+        unit: "M",
+        significantFigures: 2,
+        kind: "concentration",
+        sourceImageId: "img-1",
+        rawText: "target 0.10 M",
+        confidence: 0.99,
+      },
+      {
+        id: "d-observed",
+        label: "Final concentration M2 (from volumes)",
+        value: 0.01,
+        unit: "M",
+        significantFigures: 2,
+        kind: "concentration",
+        sourceImageId: "img-1",
+        rawText: "M2 = M1·V1/V2 = 0.01 M",
+        confidence: 0.99,
+        flagged: true,
+        flagReason: "Computed 0.01 M vs protocol 0.10 M (10× low).",
+      },
+    ],
+  };
+}
+
 export function getDemoExtraction(sampleId: LabSampleId): ExtractionResult {
   switch (sampleId) {
     case "beers-law":
@@ -429,13 +685,141 @@ export function getDemoExtraction(sampleId: LabSampleId): ExtractionResult {
       return titrationExtraction();
     case "balance":
       return balanceExtraction();
+    case "colony-plate":
+      return colonyExtraction();
+    case "dilution-error":
+      return dilutionErrorExtraction();
   }
 }
 
 export function getDemoAgent(sampleId: LabSampleId): AgentResult {
   const now = () => new Date().toISOString();
 
-  if (sampleId === "beers-law") {
+if (sampleId === "dilution-error") {
+    const dil = dilution({ m1: 1.0, v1: 1.0, v2: 100.0, solveFor: "m2" });
+    const correctV1 = dilution({ m1: 1.0, m2: 0.1, v2: 100.0, solveFor: "v1" });
+    const pe = percentError({ experimental: dil.result, theoretical: 0.1 });
+    return {
+      plan: "Apply M1V1=M2V2 to notebook volumes, compare to protocol target 0.10 M, quantify fold-error.",
+      provider: "demo",
+      model: "demo-fixture",
+      steps: [
+        {
+          id: "s1",
+          type: "plan",
+          content:
+            "1) Compute M2 from recorded V1. 2) Solve for correct V1. 3) Percent error vs 0.10 M target.",
+          timestamp: now(),
+          role: "calc_agent",
+        },
+        {
+          id: "s2",
+          type: "tool_call",
+          content: "M2 from notebook volumes (1.0 mL into 100 mL)",
+          toolName: "dilution",
+          toolInput: { m1: 1.0, v1: 1.0, v2: 100.0, solveFor: "m2" },
+          toolOutput: dil as unknown as Record<string, unknown>,
+          timestamp: now(),
+          role: "calc_agent",
+        },
+        {
+          id: "s3",
+          type: "tool_call",
+          content: "Correct V1 for target 0.10 M",
+          toolName: "dilution",
+          toolInput: { m1: 1.0, m2: 0.1, v2: 100.0, solveFor: "v1" },
+          toolOutput: correctV1 as unknown as Record<string, unknown>,
+          timestamp: now(),
+          role: "calc_agent",
+        },
+        {
+          id: "s4",
+          type: "tool_call",
+          content: "Percent error of prepared vs target concentration",
+          toolName: "percent_error",
+          toolInput: { experimental: dil.result, theoretical: 0.1 },
+          toolOutput: pe as unknown as Record<string, unknown>,
+          timestamp: now(),
+          role: "calc_agent",
+        },
+        {
+          id: "s5",
+          type: "protocol",
+          content:
+            "PROTOCOL DEVIATION: 10× dilution error — V1 recorded 1.0 mL; protocol requires 10.0 mL.",
+          timestamp: now(),
+          role: "protocol_check",
+        },
+        {
+          id: "s6",
+          type: "final",
+          content: `Prepared ${dil.result.toPrecision(2)} M vs target 0.10 M (${pe.percentError.toFixed(0)}% error; 10× low).`,
+          timestamp: now(),
+          role: "calc_agent",
+        },
+      ],
+      computed: [
+        {
+          id: "c-m2",
+          label: "M2 from notebook volumes",
+          value: dil.result,
+          unit: "M",
+          significantFigures: 2,
+          formula: dil.formula,
+          citation: {
+            toolName: "dilution",
+            input: { m1: 1.0, v1: 1.0, v2: 100.0, solveFor: "m2" },
+            output: dil as unknown as Record<string, unknown>,
+            usedFor: "Actual concentration from pipetted volume",
+          },
+        },
+        {
+          id: "c-v1-correct",
+          label: "Correct aliquot V1",
+          value: correctV1.result,
+          unit: "mL",
+          significantFigures: 3,
+          formula: correctV1.formula,
+          citation: {
+            toolName: "dilution",
+            input: { m1: 1.0, m2: 0.1, v2: 100.0, solveFor: "v1" },
+            output: correctV1 as unknown as Record<string, unknown>,
+            usedFor: "Protocol-correct pipette volume",
+          },
+        },
+        {
+          id: "c-pe",
+          label: "Percent error vs 0.10 M",
+          value: pe.percentError,
+          unit: "%",
+          significantFigures: 3,
+          formula: pe.formula,
+          citation: {
+            toolName: "percent_error",
+            input: { experimental: dil.result, theoretical: 0.1 },
+            output: pe as unknown as Record<string, unknown>,
+            usedFor: "Magnitude of dilution mistake",
+          },
+        },
+        {
+          id: "c-factor",
+          label: "Dilution fold-error",
+          value: 10,
+          unit: "×",
+          significantFigures: 2,
+          formula: "target / observed = 0.10 / 0.01",
+          citation: {
+            toolName: "dilution",
+            input: { note: "fold error" },
+            output: { factor: 10 },
+            usedFor: "Protocol deviation severity",
+          },
+        },
+      ],
+    };
+  }
+
+    if (sampleId === "beers-law") {
     const x = [0, 0.05, 0.1, 0.15, 0.2];
     const y = [0.002, 0.118, 0.241, 0.355, 0.472];
     const fit = linearRegression({
@@ -721,6 +1105,81 @@ export function getDemoAgent(sampleId: LabSampleId): AgentResult {
     };
   }
 
+  if (sampleId === "colony-plate") {
+    const params = getDemoColonyParams();
+    const cfu = computeCfu({
+      colonyCount: DEMO_COLONY_COUNT,
+      platedVolumeMl: params.platedVolumeMl ?? 0.1,
+      dilutionFactor: params.dilutionFactor ?? 1e-4,
+    });
+    return {
+      plan: "Count SAM-segmented colonies, then compute CFU/mL = N / (V × D) with plated volume and dilution.",
+      provider: "demo",
+      model: "demo-fixture",
+      steps: [
+        {
+          id: "s1",
+          type: "plan",
+          content:
+            "1) Use colony count from SAM quantifier. 2) compute_cfu with V and D from plate label.",
+          timestamp: now(),
+        },
+        {
+          id: "s2",
+          type: "tool_call",
+          content: "CFU/mL from colony count",
+          toolName: "compute_cfu",
+          toolInput: {
+            colonyCount: DEMO_COLONY_COUNT,
+            platedVolumeMl: params.platedVolumeMl,
+            dilutionFactor: params.dilutionFactor,
+          },
+          toolOutput: cfu as unknown as Record<string, unknown>,
+          timestamp: now(),
+        },
+        {
+          id: "s3",
+          type: "final",
+          content: `${DEMO_COLONY_COUNT} colonies → ${cfu.cfuPerMl.toExponential(2)} CFU/mL`,
+          timestamp: now(),
+        },
+      ],
+      computed: [
+        {
+          id: "c-count",
+          label: "Colony count (SAM)",
+          value: DEMO_COLONY_COUNT,
+          unit: "colonies",
+          significantFigures: 2,
+          citation: {
+            toolName: "sam_quantifier",
+            input: { mode: "colony" },
+            output: { colonyCount: DEMO_COLONY_COUNT },
+            usedFor: "Discrete colony segmentation count",
+          },
+        },
+        {
+          id: "c-cfu",
+          label: "CFU/mL",
+          value: cfu.cfuPerMl,
+          unit: "CFU/mL",
+          significantFigures: 2,
+          formula: cfu.formula,
+          citation: {
+            toolName: "compute_cfu",
+            input: {
+              colonyCount: DEMO_COLONY_COUNT,
+              platedVolumeMl: params.platedVolumeMl,
+              dilutionFactor: params.dilutionFactor,
+            },
+            output: cfu as unknown as Record<string, unknown>,
+            usedFor: "Viable cell density in stock",
+          },
+        },
+      ],
+    };
+  }
+
   // balance
   const moles = molarity({
     compute: "moles",
@@ -815,6 +1274,33 @@ export function getDemoAgent(sampleId: LabSampleId): AgentResult {
 }
 
 export function getDemoVerification(sampleId: LabSampleId): VerificationResult {
+  if (sampleId === "dilution-error") {
+    return {
+      provider: "demo",
+      model: "demo-fixture",
+      overallConfidence: 0.52,
+      summary:
+        "OCR matches the notebook, but protocol math disagrees: V1=1.0 mL cannot produce the claimed 0.10 M working solution.",
+      flags: [
+        {
+          id: "f-dilution",
+          measurementId: "d-v1",
+          severity: "error",
+          code: "DILUTION_10X",
+          message:
+            "10× dilution error: pipetted 1.0 mL stock into 100 mL flask → 0.01 M, protocol targets 0.10 M (needs 10.0 mL).",
+          suggestion: "Re-pipette 10.0 mL of 1.0 M stock and QS to 100.0 mL.",
+        },
+        {
+          id: "f-claimed",
+          measurementId: "d-observed",
+          severity: "error",
+          code: "CONCENTRATION_MISMATCH",
+          message: "Claimed working concentration inconsistent with M1·V1/V2.",
+        },
+      ],
+    };
+  }
   if (sampleId === "beers-law") {
     return {
       provider: "demo",
@@ -860,6 +1346,26 @@ export function getDemoVerification(sampleId: LabSampleId): VerificationResult {
       ],
     };
   }
+  if (sampleId === "colony-plate") {
+    return {
+      provider: "demo",
+      model: "demo-fixture",
+      overallConfidence: 0.92,
+      summary:
+        "Colony count 42 matches SAM fixture segmentations. Dilution label confirmation flagged.",
+      flags: [
+        {
+          id: "f1",
+          measurementId: "c-cfu",
+          severity: "warning",
+          code: "DILUTION_LABEL",
+          message:
+            "CFU/mL assumes 10⁻⁴ dilution from plate label — confirm against notebook before reporting.",
+          suggestion: "Match dilution series sticker / notebook entry.",
+        },
+      ],
+    };
+  }
   return {
     provider: "demo",
     model: "demo-fixture",
@@ -889,6 +1395,31 @@ export function buildDemoReport(
         `- **${c.label}**: ${c.value.toPrecision(c.significantFigures)} ${c.unit} _(tool: \`${c.citation.toolName}\`)_`,
     )
     .join("\n");
+
+  if (sampleId === "dilution-error") {
+    const m2 = agent.computed.find((c) => c.id === "c-m2");
+    const v1c = agent.computed.find((c) => c.id === "c-v1-correct");
+    const sections = {
+      introduction: `This prep aimed to dilute 1.0 M CuSO₄ stock to a 0.10 M working solution in a 100.0 mL volumetric flask using M1V1 = M2V2.`,
+      methods: `Protocol specified V1 = 10.0 mL stock QS to 100.0 mL. BenchMate extracted stock label and notebook volumes, then ran the deterministic \`dilution\` tool and a protocol-deviation check.`,
+      data: extraction.tables
+        .map(
+          (t) =>
+            `### ${t.title}\n\n| ${t.headers.join(" | ")} |\n| ${t.headers.map(() => "---").join(" | ")} |\n${t.rows.map((r) => `| ${r.join(" | ")} |`).join("\n")}`,
+        )
+        .join("\n\n"),
+      calculations: `From notebook volumes: M2 = (1.0 M)(1.0 mL)/(100.0 mL) = **${m2?.value.toPrecision(2)} M**. Correct V1 for 0.10 M target = **${v1c?.value.toPrecision(3)} mL**.`,
+      results: computedLines,
+      errorAnalysis: `⚠ DILUTION_10X — trainee pipetted 1.0 mL instead of 10.0 mL (10× low). Deterministic protocol check caught the error before the working solution was used downstream.`,
+      conclusion: `Do not use the prepared solution. Re-make with V1 = ${v1c?.value.toPrecision(3)} mL to obtain 0.10 M.`,
+    };
+    return {
+      title: extraction.experimentTitle,
+      markdown: formatMarkdown(extraction.experimentTitle, sections),
+      sections,
+      citations,
+    };
+  }
 
   if (sampleId === "beers-law") {
     const unk = agent.computed.find((c) => c.id === "c-unk");
@@ -927,6 +1458,30 @@ export function buildDemoReport(
       results: computedLines,
       errorAnalysis: `Trial volumes agree within 0.15 mL. Endpoint overshoot and burette reading (±0.05 mL) dominate random error. Propagated uncertainty on n_NaOH reported via \`propagate_uncertainty\`.`,
       conclusion: `[HCl] = **${mhcl?.value.toPrecision(4)} M** with percent error **${pe?.value.toFixed(2)}%** relative to 0.100 M.`,
+    };
+    return {
+      title: extraction.experimentTitle,
+      markdown: formatMarkdown(extraction.experimentTitle, sections),
+      sections,
+      citations,
+    };
+  }
+
+  if (sampleId === "colony-plate") {
+    const cfu = agent.computed.find((c) => c.id === "c-cfu");
+    const sections = {
+      introduction: `Bacterial colony forming units (CFU) were quantified from a petri-dish photograph. Meta SAM 3.1 segmented discrete colonies; deterministic code counted colonies and computed CFU/mL.`,
+      methods: `An LB agar plate (10⁻⁴ dilution, 0.1 mL plated) was imaged. SAM 3.1 produced colony segmentations. Tool \`compute_cfu\` applied CFU/mL = N / (V × D). No LLM arithmetic was used for the reported density.`,
+      data: extraction.tables
+        .map(
+          (t) =>
+            `### ${t.title}\n\n| ${t.headers.join(" | ")} |\n| ${t.headers.map(() => "---").join(" | ")} |\n${t.rows.map((r) => `| ${r.join(" | ")} |`).join("\n")}`,
+        )
+        .join("\n\n"),
+      calculations: cfu?.formula ?? "CFU/mL = N / (V × D)",
+      results: computedLines,
+      errorAnalysis: `Primary uncertainties: overlapping colonies (under-count), edge colonies clipped by the dish rim, and dilution labeling. Confirm dilution series before publication.`,
+      conclusion: `Stock density ≈ **${cfu?.value.toExponential(2)} CFU/mL** from ${DEMO_COLONY_COUNT} counted colonies.`,
     };
     return {
       title: extraction.experimentTitle,
@@ -988,6 +1543,17 @@ ${sections.conclusion}
 
 export function inferSampleIdFromName(name: string): LabSampleId {
   const n = name.toLowerCase();
+  if (
+    n.includes("colony") ||
+    n.includes("petri") ||
+    n.includes("cfu") ||
+    n.includes("agar")
+  ) {
+    return "colony-plate";
+  }
+  if (n.includes("dilut") || n.includes("10x") || n.includes("protocol")) {
+    return "dilution-error";
+  }
   if (n.includes("titrat") || n.includes("burette") || n.includes("acid")) {
     return "titration";
   }

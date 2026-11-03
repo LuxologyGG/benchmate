@@ -4,6 +4,7 @@ import { dilution, molarity } from "@/lib/tools/stoichiometry";
 import { beersLawConcentration, linearRegression } from "@/lib/tools/regression";
 import { percentError, percentYield } from "@/lib/tools/percent-error";
 import { propagateUncertainty, roundWithUncertainty } from "@/lib/tools/uncertainty";
+import { computeCfu } from "@/lib/tools/cfu";
 
 export const TOOL_DEFINITIONS: OpenAI.Chat.Completions.ChatCompletionTool[] = [
   {
@@ -170,6 +171,23 @@ export const TOOL_DEFINITIONS: OpenAI.Chat.Completions.ChatCompletionTool[] = [
       },
     },
   },
+  {
+    type: "function",
+    function: {
+      name: "compute_cfu",
+      description:
+        "Compute CFU/mL from colony count, plated volume (mL), and dilution factor (e.g. 1e-4). Formula: N / (V × D).",
+      parameters: {
+        type: "object",
+        properties: {
+          colonyCount: { type: "number" },
+          platedVolumeMl: { type: "number" },
+          dilutionFactor: { type: "number" },
+        },
+        required: ["colonyCount", "platedVolumeMl", "dilutionFactor"],
+      },
+    },
+  },
 ];
 
 export function executeTool(
@@ -195,6 +213,8 @@ export function executeTool(
       return propagateUncertainty(args as Parameters<typeof propagateUncertainty>[0]);
     case "round_with_uncertainty":
       return roundWithUncertainty(args as Parameters<typeof roundWithUncertainty>[0]);
+    case "compute_cfu":
+      return computeCfu(args as Parameters<typeof computeCfu>[0]);
     default:
       throw new Error(`Unknown tool: ${name}`);
   }
@@ -210,4 +230,5 @@ export {
   percentYield,
   propagateUncertainty,
   roundWithUncertainty,
+  computeCfu,
 };

@@ -23,7 +23,9 @@ import { molarity, dilution } from "../src/lib/tools/stoichiometry";
 import { linearRegression, beersLawConcentration } from "../src/lib/tools/regression";
 import { percentError } from "../src/lib/tools/percent-error";
 import { propagateUncertainty } from "../src/lib/tools/uncertainty";
-import { executeTool } from "../src/lib/tools";
+import { executeTool, computeCfu } from "../src/lib/tools";
+import { quantifyColonies } from "../src/lib/quant/colony-math";
+import { getDemoColonySegmentations, DEMO_COLONY_COUNT, DEMO_COLONY_EXPECTED_CFU } from "../src/lib/demo/colony-fixtures";
 
 const mg = convertUnit({ value: 2500, fromUnit: "mg", toUnit: "g" });
 assert.ok(Math.abs(mg.value - 2.5) < 1e-9);
@@ -56,7 +58,19 @@ assert.ok(Math.abs(u.uncertainty - Math.hypot(0.1, 0.2)) < 1e-12);
 const viaIndex = executeTool("percent_error", { experimental: 1, theoretical: 1 });
 assert.equal((viaIndex as { percentError: number }).percentError, 0);
 
-console.log("All chemistry tool tests passed.");
+const cfu = computeCfu({ colonyCount: 42, platedVolumeMl: 0.1, dilutionFactor: 1e-4 });
+assert.ok(Math.abs(cfu.cfuPerMl - 4.2e6) < 1e-6);
+
+const segs = getDemoColonySegmentations();
+assert.equal(segs.length, DEMO_COLONY_COUNT);
+const quant = quantifyColonies(segs, { platedVolumeMl: 0.1, dilutionFactor: 1e-4 });
+assert.equal(quant.colonyCount, DEMO_COLONY_COUNT);
+assert.ok(Math.abs(quant.cfuPerMl - DEMO_COLONY_EXPECTED_CFU) < 1e-6);
+
+const viaCfu = executeTool("compute_cfu", { colonyCount: 42, platedVolumeMl: 0.1, dilutionFactor: 1e-4 });
+assert.ok(Math.abs((viaCfu as { cfuPerMl: number }).cfuPerMl - 4.2e6) < 1e-6);
+
+console.log("All chemistry tool tests passed (incl. CFU colony quant).");
 `,
 );
 

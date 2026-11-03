@@ -1,4 +1,72 @@
-export type LabSampleId = "beers-law" | "titration" | "balance";
+export type LabSampleId =
+  | "beers-law"
+  | "titration"
+  | "balance"
+  | "colony-plate"
+  | "dilution-error";
+
+export type FlagSeverity = "error" | "warning" | "info";
+
+/** Specialist roles dispatched by Muse Wonder orchestrator. */
+export type AgentRole =
+  | "orchestrator"
+  | "sam_quantifier"
+  | "spark_readout"
+  | "calc_agent"
+  | "verifier"
+  | "critic"
+  | "protocol_check"
+  | "report_writer";
+
+export type TraceEventKind =
+  | "orchestrator_plan"
+  | "dispatch"
+  | "specialist_start"
+  | "specialist_done"
+  | "tool_call"
+  | "observation"
+  | "disagreement"
+  | "resolution"
+  | "protocol_deviation"
+  | "report"
+  | "error"
+  | "done";
+
+export interface TraceEvent {
+  id: string;
+  kind: TraceEventKind;
+  role: AgentRole;
+  model?: string;
+  title: string;
+  detail?: string;
+  payload?: Record<string, unknown>;
+  timestamp: string;
+}
+
+export interface ProtocolDeviation {
+  id: string;
+  code: string;
+  severity: FlagSeverity;
+  /** Human-readable wow-moment message, e.g. 10× dilution error. */
+  message: string;
+  expected: Record<string, unknown>;
+  observed: Record<string, unknown>;
+  factor?: number;
+  suggestion?: string;
+  measurementIds?: string[];
+}
+
+export interface OrchestrationResult {
+  sampleId: LabSampleId;
+  extraction: ExtractionResult;
+  agent: AgentResult;
+  verification: VerificationResult;
+  report?: LabReport;
+  deviations: ProtocolDeviation[];
+  trace: TraceEvent[];
+  orchestratorModel: string;
+  provider: "meta" | "baseten" | "demo";
+}
 
 export type MeasurementKind =
   | "mass"
@@ -8,6 +76,11 @@ export type MeasurementKind =
   | "temperature"
   | "wavelength"
   | "time"
+  | "colony-count"
+  | "cfu"
+  | "area"
+  | "confluence"
+  | "intensity"
   | "other";
 
 export interface BoundingBox {
@@ -41,7 +114,23 @@ export interface ExtractedMeasurement {
 export interface ExtractionResult {
   sampleId?: LabSampleId;
   experimentTitle: string;
-  experimentType: "beers-law" | "titration" | "gravimetric" | "other";
+  experimentType:
+    | "beers-law"
+    | "titration"
+    | "gravimetric"
+    | "colony-count"
+    | "other";
+  /** Present when SAM quantifier ran (colony / gel / confluence). */
+  quantitation?: {
+    mode: "colony" | "gel-densitometry" | "confluence";
+    colonyCount?: number;
+    cfuPerMl?: number;
+    platedVolumeMl?: number;
+    dilutionFactor?: number;
+    percentConfluence?: number;
+    bandCount?: number;
+    notes?: string[];
+  };
   summary: string;
   measurements: ExtractedMeasurement[];
   boundingBoxes: BoundingBox[];
@@ -74,11 +163,12 @@ export interface ComputedValue {
 
 export interface AgentStep {
   id: string;
-  type: "plan" | "tool_call" | "observation" | "final";
+  type: "plan" | "tool_call" | "observation" | "final" | "dispatch" | "protocol";
   content: string;
   toolName?: string;
   toolInput?: Record<string, unknown>;
   toolOutput?: Record<string, unknown>;
+  role?: AgentRole;
   timestamp: string;
 }
 
@@ -95,8 +185,6 @@ export interface AgentResult {
   provider: "meta" | "baseten" | "demo";
   model: string;
 }
-
-export type FlagSeverity = "error" | "warning" | "info";
 
 export interface VerificationFlag {
   id: string;
