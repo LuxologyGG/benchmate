@@ -152,8 +152,8 @@ export function AgentTracePanel({
               <span className="animate-pulse">▌</span>
             </li>
           )}
-          <div ref={endRef} />
         </ol>
+        <div ref={endRef} />
       </ScrollArea>
 
       {!running && events.some((e) => e.kind === "done") && (
