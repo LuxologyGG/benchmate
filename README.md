@@ -91,9 +91,16 @@ META_SAM_MODEL_ID=sam-3.1
 | --- | --- |
 | `npm run dev` | Next.js dev server |
 | `npm run generate:samples` | Fixture PNGs (colony plate + instruments) |
+| `npm run generate:colony-fixtures` | Labeled colony/gel eval set → `fixtures/colony-eval/` |
 | `npm run demo:record` | Playwright walkthrough → `artifacts/` |
 | `npm run test:tools` | Chemistry + CFU unit tests |
 | `npm run test:orchestration` | Wonder orchestrator + 10× dilution catch tests |
+| `npm run test:e2e` | DEMO_MODE e2e: Wonder→CFU (42→4.2e6) + dilution catch |
+| `npm run test:live-smoke` | Optional live Meta smoke (skips without key) |
+| `npm run eval:colony` | Colony accuracy table (SAM quantifier + labeled set) |
+| `npm run verify:fresh-clone` | Fresh-clone DEMO_MODE verification checklist |
+
+Eval report: **[docs/eval/EVAL_REPORT.md](docs/eval/EVAL_REPORT.md)**.
 
 ## Built with Muse
 
