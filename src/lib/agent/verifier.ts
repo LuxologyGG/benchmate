@@ -1,6 +1,7 @@
 import { isDemoMode } from "@/lib/config";
 import { getDemoVerification } from "@/lib/demo/fixtures";
-import { chatCompletion, extractJsonObject } from "@/lib/meta-client";
+import { chatCompletionJson } from "@/lib/meta-client";
+import { getSparkModelId } from "@/lib/config";
 import type {
   ExtractionResult,
   LabSampleId,
@@ -27,11 +28,16 @@ export async function verifyExtraction(input: {
     image_url: { url: img.dataUrl, detail: "high" as const },
   }));
 
-  const result = await chatCompletion({
+  const { data: parsed, result } = await chatCompletionJson<
+    Omit<VerificationResult, "provider" | "model">
+  >({
+    model: getSparkModelId(),
+    max_completion_tokens: 4096,
+    maxParseAttempts: 2,
     messages: [
       {
         role: "developer",
-        content: `You are BenchMate's verifier. Compare extracted JSON to the lab images. Flag unit mismatches, impossible values (negative volumes, absorbance >> 2 without note, molarity > 20 M, etc.), and significant-figure errors. Return ONLY JSON:
+        content: `You are BenchMate's verifier. Compare extracted JSON to the lab images. Flag unit mismatches, impossible values (negative volumes, absorbance >> 2 without note, molarity > 20 M, etc.), significant-figure errors, and protocol dilution mistakes. Return ONLY JSON:
 {"overallConfidence": number, "summary": string, "flags":[{"id","measurementId","severity":"error"|"warning"|"info","code","message","suggestion?"}]}`,
       },
       {
@@ -47,10 +53,6 @@ export async function verifyExtraction(input: {
     ],
     response_format: { type: "json_object" },
   });
-
-  const parsed = extractJsonObject<Omit<VerificationResult, "provider" | "model">>(
-    result.content ?? "{}",
-  );
 
   return {
     ...parsed,

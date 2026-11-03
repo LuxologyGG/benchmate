@@ -4,6 +4,10 @@ import {
   resolveProvider,
   type ModelProvider,
 } from "@/lib/config";
+import {
+  isTruncatedJsonError,
+  parseJsonRobust,
+} from "@/lib/json-repair";
 import type { ChatMessage } from "@/lib/types";
 
 export type MetaClientErrorCode =
@@ -44,6 +48,8 @@ export interface ChatCompletionOptions {
   tool_choice?: OpenAI.Chat.Completions.ChatCompletionToolChoiceOption;
   response_format?: OpenAI.Chat.Completions.ChatCompletionCreateParams["response_format"];
   prefer?: "meta" | "baseten" | "auto";
+  /** Override resolved model (e.g. muse-wonder-1.0 vs muse-spark-1.3). */
+  model?: string;
   max_completion_tokens?: number;
 }
 
@@ -56,8 +62,12 @@ export interface ChatCompletionResult {
   }>;
   provider: ModelProvider;
   model: string;
+  finish_reason?: string | null;
   raw: unknown;
 }
+
+/** Default completion budget — truncated JSON was the #1 live failure mode. */
+export const DEFAULT_MAX_COMPLETION_TOKENS = 8192;
 
 export function createOpenAIClient(prefer?: "meta" | "baseten" | "auto") {
   const resolved = resolveProvider(prefer);
@@ -144,18 +154,20 @@ export async function chatCompletion(
     );
   }
 
+  const model = options.model || resolved.model;
   const maxAttempts = 3;
   let lastError: MetaClientError | null = null;
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
       const response = await client.chat.completions.create({
-        model: resolved.model,
+        model,
         messages: options.messages as OpenAI.Chat.Completions.ChatCompletionMessageParam[],
         tools: options.tools,
         tool_choice: options.tool_choice,
         response_format: options.response_format,
-        max_completion_tokens: options.max_completion_tokens ?? 4096,
+        max_completion_tokens:
+          options.max_completion_tokens ?? DEFAULT_MAX_COMPLETION_TOKENS,
       });
 
       const choice = response.choices?.[0];
@@ -190,7 +202,8 @@ export async function chatCompletion(
         content: message.content ?? null,
         tool_calls: toolCalls,
         provider: resolved.provider,
-        model: resolved.model,
+        model,
+        finish_reason: choice.finish_reason,
         raw: response,
       };
     } catch (err) {
@@ -206,26 +219,82 @@ export async function chatCompletion(
   throw lastError ?? new MetaClientError("unknown", "Meta Model API failed");
 }
 
+/**
+ * Parse model content into JSON with repair for truncated / unterminated output.
+ */
 export function extractJsonObject<T>(text: string): T {
-  const trimmed = text.trim();
-  const fence = trimmed.match(/```(?:json)?\s*([\s\S]*?)```/i);
-  const candidate = fence ? fence[1].trim() : trimmed;
-  const start = candidate.indexOf("{");
-  const end = candidate.lastIndexOf("}");
-  if (start === -1 || end === -1 || end <= start) {
-    throw new MetaClientError(
-      "malformed_response",
-      "Model response did not contain a JSON object",
-      { retryable: false },
-    );
-  }
   try {
-    return JSON.parse(candidate.slice(start, end + 1)) as T;
+    return parseJsonRobust<T>(text);
   } catch (err) {
     throw new MetaClientError(
       "malformed_response",
-      "Model response JSON could not be parsed",
-      { retryable: false, cause: err },
+      err instanceof Error
+        ? `Model response JSON could not be parsed: ${err.message}`
+        : "Model response JSON could not be parsed",
+      { retryable: true, cause: err },
     );
   }
+}
+
+/**
+ * Chat + JSON parse with automatic repair retry when the model truncates output.
+ * Bumps max_completion_tokens on truncation retries.
+ */
+export async function chatCompletionJson<T>(
+  options: ChatCompletionOptions & {
+    repairHint?: string;
+    maxParseAttempts?: number;
+  },
+): Promise<{ data: T; result: ChatCompletionResult }> {
+  const maxParseAttempts = options.maxParseAttempts ?? 2;
+  let tokens = options.max_completion_tokens ?? DEFAULT_MAX_COMPLETION_TOKENS;
+  let messages = [...options.messages];
+  let lastErr: unknown;
+
+  for (let attempt = 1; attempt <= maxParseAttempts; attempt++) {
+    const result = await chatCompletion({
+      ...options,
+      messages,
+      max_completion_tokens: tokens,
+      response_format: options.response_format ?? { type: "json_object" },
+    });
+
+    const truncated =
+      result.finish_reason === "length" ||
+      /Unterminated string/i.test(result.content ?? "");
+
+    try {
+      const data = extractJsonObject<T>(result.content ?? "{}");
+      return { data, result };
+    } catch (err) {
+      lastErr = err;
+      const shouldRetry =
+        attempt < maxParseAttempts &&
+        (truncated || isTruncatedJsonError(err) || (err instanceof MetaClientError && err.retryable));
+
+      if (!shouldRetry) throw err;
+
+      tokens = Math.min(tokens * 2, 16384);
+      messages = [
+        ...options.messages,
+        {
+          role: "assistant",
+          content: result.content ?? "",
+        },
+        {
+          role: "user",
+          content:
+            options.repairHint ??
+            "Your previous reply was truncated or invalid JSON (unterminated string / unexpected end). Reply again with ONE compact valid JSON object only — no markdown fences, no commentary.",
+        },
+      ];
+    }
+  }
+
+  throw (
+    lastErr ??
+    new MetaClientError("malformed_response", "Failed to obtain valid JSON from model", {
+      retryable: false,
+    })
+  );
 }

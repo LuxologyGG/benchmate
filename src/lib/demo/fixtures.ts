@@ -14,6 +14,7 @@ import {
 import {
   beersLawConcentration,
   computeCfu,
+  dilution,
   linearRegression,
   molarity,
   percentError,
@@ -53,6 +54,15 @@ export const SAMPLE_META: Record<
     imageFiles: [
       "/samples/colony-plate.png",
       "/samples/colony-plate-label.png",
+    ],
+  },
+  "dilution-error": {
+    title: "Serial Dilution — 10× Protocol Catch",
+    description:
+      "Wow demo: notebook shows 1.0 mL stock into 100 mL (should be 10.0 mL) — BenchMate catches the 10× error.",
+    imageFiles: [
+      "/samples/balance-screen.png",
+      "/samples/beers-law-notebook.png",
     ],
   },
 };
@@ -549,6 +559,124 @@ function colonyExtraction(): ExtractionResult {
   };
 }
 
+function dilutionErrorExtraction(): ExtractionResult {
+  return {
+    sampleId: "dilution-error",
+    experimentTitle: "Working Solution Prep — 1.0 M → 0.10 M CuSO₄",
+    experimentType: "other",
+    summary:
+      "Protocol: dilute 1.0 M stock to 0.10 M in a 100.0 mL volumetric flask (expect V1 = 10.0 mL). Notebook recorded V1 = 1.0 mL — a classic 10× pipetting error.",
+    provider: "demo",
+    model: "demo-fixture",
+    boundingBoxes: [
+      {
+        id: "bb-stock",
+        label: "Stock bottle label",
+        x: 0.15,
+        y: 0.2,
+        width: 0.35,
+        height: 0.25,
+        confidence: 0.93,
+      },
+      {
+        id: "bb-v1",
+        label: "Aliquot volume (notebook)",
+        x: 0.4,
+        y: 0.35,
+        width: 0.4,
+        height: 0.2,
+        confidence: 0.91,
+      },
+      {
+        id: "bb-flask",
+        label: "Volumetric flask",
+        x: 0.55,
+        y: 0.55,
+        width: 0.3,
+        height: 0.3,
+        confidence: 0.88,
+      },
+    ],
+    tables: [
+      {
+        id: "dilution-protocol",
+        title: "Dilution worksheet",
+        headers: ["Parameter", "Protocol", "Notebook"],
+        rows: [
+          ["Stock M1", "1.0 M", "1.0 M"],
+          ["Aliquot V1", "10.0 mL", "1.0 mL"],
+          ["Flask V2", "100.0 mL", "100.0 mL"],
+          ["Target M2", "0.10 M", "0.10 M (claimed)"],
+        ],
+      },
+    ],
+    measurements: [
+      {
+        id: "d-stock",
+        label: "Stock concentration M1",
+        value: 1.0,
+        unit: "M",
+        significantFigures: 2,
+        kind: "concentration",
+        sourceImageId: "img-0",
+        rawText: "1.0 M CuSO₄ stock",
+        confidence: 0.97,
+        boundingBoxId: "bb-stock",
+      },
+      {
+        id: "d-v1",
+        label: "Aliquot volume V1 (pipetted)",
+        value: 1.0,
+        unit: "mL",
+        significantFigures: 2,
+        kind: "volume",
+        sourceImageId: "img-1",
+        rawText: "V1 = 1.0 mL",
+        confidence: 0.94,
+        boundingBoxId: "bb-v1",
+        flagged: true,
+        flagReason: "Protocol expects 10.0 mL — suspected 10× dilution error.",
+      },
+      {
+        id: "d-v2",
+        label: "Volumetric flask V2",
+        value: 100.0,
+        unit: "mL",
+        significantFigures: 4,
+        kind: "volume",
+        sourceImageId: "img-1",
+        rawText: "100.0 mL flask",
+        confidence: 0.96,
+        boundingBoxId: "bb-flask",
+      },
+      {
+        id: "d-target",
+        label: "Protocol target M2",
+        value: 0.1,
+        unit: "M",
+        significantFigures: 2,
+        kind: "concentration",
+        sourceImageId: "img-1",
+        rawText: "target 0.10 M",
+        confidence: 0.99,
+      },
+      {
+        id: "d-observed",
+        label: "Final concentration M2 (from volumes)",
+        value: 0.01,
+        unit: "M",
+        significantFigures: 2,
+        kind: "concentration",
+        sourceImageId: "img-1",
+        rawText: "M2 = M1·V1/V2 = 0.01 M",
+        confidence: 0.99,
+        flagged: true,
+        flagReason: "Computed 0.01 M vs protocol 0.10 M (10× low).",
+      },
+    ],
+  };
+}
+
 export function getDemoExtraction(sampleId: LabSampleId): ExtractionResult {
   switch (sampleId) {
     case "beers-law":
@@ -559,13 +687,139 @@ export function getDemoExtraction(sampleId: LabSampleId): ExtractionResult {
       return balanceExtraction();
     case "colony-plate":
       return colonyExtraction();
+    case "dilution-error":
+      return dilutionErrorExtraction();
   }
 }
 
 export function getDemoAgent(sampleId: LabSampleId): AgentResult {
   const now = () => new Date().toISOString();
 
-  if (sampleId === "beers-law") {
+if (sampleId === "dilution-error") {
+    const dil = dilution({ m1: 1.0, v1: 1.0, v2: 100.0, solveFor: "m2" });
+    const correctV1 = dilution({ m1: 1.0, m2: 0.1, v2: 100.0, solveFor: "v1" });
+    const pe = percentError({ experimental: dil.result, theoretical: 0.1 });
+    return {
+      plan: "Apply M1V1=M2V2 to notebook volumes, compare to protocol target 0.10 M, quantify fold-error.",
+      provider: "demo",
+      model: "demo-fixture",
+      steps: [
+        {
+          id: "s1",
+          type: "plan",
+          content:
+            "1) Compute M2 from recorded V1. 2) Solve for correct V1. 3) Percent error vs 0.10 M target.",
+          timestamp: now(),
+          role: "calc_agent",
+        },
+        {
+          id: "s2",
+          type: "tool_call",
+          content: "M2 from notebook volumes (1.0 mL into 100 mL)",
+          toolName: "dilution",
+          toolInput: { m1: 1.0, v1: 1.0, v2: 100.0, solveFor: "m2" },
+          toolOutput: dil as unknown as Record<string, unknown>,
+          timestamp: now(),
+          role: "calc_agent",
+        },
+        {
+          id: "s3",
+          type: "tool_call",
+          content: "Correct V1 for target 0.10 M",
+          toolName: "dilution",
+          toolInput: { m1: 1.0, m2: 0.1, v2: 100.0, solveFor: "v1" },
+          toolOutput: correctV1 as unknown as Record<string, unknown>,
+          timestamp: now(),
+          role: "calc_agent",
+        },
+        {
+          id: "s4",
+          type: "tool_call",
+          content: "Percent error of prepared vs target concentration",
+          toolName: "percent_error",
+          toolInput: { experimental: dil.result, theoretical: 0.1 },
+          toolOutput: pe as unknown as Record<string, unknown>,
+          timestamp: now(),
+          role: "calc_agent",
+        },
+        {
+          id: "s5",
+          type: "protocol",
+          content:
+            "PROTOCOL DEVIATION: 10× dilution error — V1 recorded 1.0 mL; protocol requires 10.0 mL.",
+          timestamp: now(),
+          role: "protocol_check",
+        },
+        {
+          id: "s6",
+          type: "final",
+          content: `Prepared ${dil.result.toPrecision(2)} M vs target 0.10 M (${pe.percentError.toFixed(0)}% error; 10× low).`,
+          timestamp: now(),
+          role: "calc_agent",
+        },
+      ],
+      computed: [
+        {
+          id: "c-m2",
+          label: "M2 from notebook volumes",
+          value: dil.result,
+          unit: "M",
+          significantFigures: 2,
+          formula: dil.formula,
+          citation: {
+            toolName: "dilution",
+            input: { m1: 1.0, v1: 1.0, v2: 100.0, solveFor: "m2" },
+            output: dil as unknown as Record<string, unknown>,
+            usedFor: "Actual concentration from pipetted volume",
+          },
+        },
+        {
+          id: "c-v1-correct",
+          label: "Correct aliquot V1",
+          value: correctV1.result,
+          unit: "mL",
+          significantFigures: 3,
+          formula: correctV1.formula,
+          citation: {
+            toolName: "dilution",
+            input: { m1: 1.0, m2: 0.1, v2: 100.0, solveFor: "v1" },
+            output: correctV1 as unknown as Record<string, unknown>,
+            usedFor: "Protocol-correct pipette volume",
+          },
+        },
+        {
+          id: "c-pe",
+          label: "Percent error vs 0.10 M",
+          value: pe.percentError,
+          unit: "%",
+          significantFigures: 3,
+          formula: pe.formula,
+          citation: {
+            toolName: "percent_error",
+            input: { experimental: dil.result, theoretical: 0.1 },
+            output: pe as unknown as Record<string, unknown>,
+            usedFor: "Magnitude of dilution mistake",
+          },
+        },
+        {
+          id: "c-factor",
+          label: "Dilution fold-error",
+          value: 10,
+          unit: "×",
+          significantFigures: 2,
+          formula: "target / observed = 0.10 / 0.01",
+          citation: {
+            toolName: "dilution",
+            input: { note: "fold error" },
+            output: { factor: 10 },
+            usedFor: "Protocol deviation severity",
+          },
+        },
+      ],
+    };
+  }
+
+    if (sampleId === "beers-law") {
     const x = [0, 0.05, 0.1, 0.15, 0.2];
     const y = [0.002, 0.118, 0.241, 0.355, 0.472];
     const fit = linearRegression({
@@ -1020,6 +1274,33 @@ export function getDemoAgent(sampleId: LabSampleId): AgentResult {
 }
 
 export function getDemoVerification(sampleId: LabSampleId): VerificationResult {
+  if (sampleId === "dilution-error") {
+    return {
+      provider: "demo",
+      model: "demo-fixture",
+      overallConfidence: 0.52,
+      summary:
+        "OCR matches the notebook, but protocol math disagrees: V1=1.0 mL cannot produce the claimed 0.10 M working solution.",
+      flags: [
+        {
+          id: "f-dilution",
+          measurementId: "d-v1",
+          severity: "error",
+          code: "DILUTION_10X",
+          message:
+            "10× dilution error: pipetted 1.0 mL stock into 100 mL flask → 0.01 M, protocol targets 0.10 M (needs 10.0 mL).",
+          suggestion: "Re-pipette 10.0 mL of 1.0 M stock and QS to 100.0 mL.",
+        },
+        {
+          id: "f-claimed",
+          measurementId: "d-observed",
+          severity: "error",
+          code: "CONCENTRATION_MISMATCH",
+          message: "Claimed working concentration inconsistent with M1·V1/V2.",
+        },
+      ],
+    };
+  }
   if (sampleId === "beers-law") {
     return {
       provider: "demo",
@@ -1114,6 +1395,31 @@ export function buildDemoReport(
         `- **${c.label}**: ${c.value.toPrecision(c.significantFigures)} ${c.unit} _(tool: \`${c.citation.toolName}\`)_`,
     )
     .join("\n");
+
+  if (sampleId === "dilution-error") {
+    const m2 = agent.computed.find((c) => c.id === "c-m2");
+    const v1c = agent.computed.find((c) => c.id === "c-v1-correct");
+    const sections = {
+      introduction: `This prep aimed to dilute 1.0 M CuSO₄ stock to a 0.10 M working solution in a 100.0 mL volumetric flask using M1V1 = M2V2.`,
+      methods: `Protocol specified V1 = 10.0 mL stock QS to 100.0 mL. BenchMate extracted stock label and notebook volumes, then ran the deterministic \`dilution\` tool and a protocol-deviation check.`,
+      data: extraction.tables
+        .map(
+          (t) =>
+            `### ${t.title}\n\n| ${t.headers.join(" | ")} |\n| ${t.headers.map(() => "---").join(" | ")} |\n${t.rows.map((r) => `| ${r.join(" | ")} |`).join("\n")}`,
+        )
+        .join("\n\n"),
+      calculations: `From notebook volumes: M2 = (1.0 M)(1.0 mL)/(100.0 mL) = **${m2?.value.toPrecision(2)} M**. Correct V1 for 0.10 M target = **${v1c?.value.toPrecision(3)} mL**.`,
+      results: computedLines,
+      errorAnalysis: `⚠ DILUTION_10X — trainee pipetted 1.0 mL instead of 10.0 mL (10× low). Deterministic protocol check caught the error before the working solution was used downstream.`,
+      conclusion: `Do not use the prepared solution. Re-make with V1 = ${v1c?.value.toPrecision(3)} mL to obtain 0.10 M.`,
+    };
+    return {
+      title: extraction.experimentTitle,
+      markdown: formatMarkdown(extraction.experimentTitle, sections),
+      sections,
+      citations,
+    };
+  }
 
   if (sampleId === "beers-law") {
     const unk = agent.computed.find((c) => c.id === "c-unk");
@@ -1244,6 +1550,9 @@ export function inferSampleIdFromName(name: string): LabSampleId {
     n.includes("agar")
   ) {
     return "colony-plate";
+  }
+  if (n.includes("dilut") || n.includes("10x") || n.includes("protocol")) {
+    return "dilution-error";
   }
   if (n.includes("titrat") || n.includes("burette") || n.includes("acid")) {
     return "titration";
