@@ -50,7 +50,7 @@ export function MeasurementTable({
             return (
               <TableRow
                 key={m.id}
-                className={flagged && !m.userConfirmed ? "bg-amber-50/80" : undefined}
+                className={flagged && !m.userConfirmed ? "bg-accent/5" : undefined}
                 data-testid={`measurement-row-${m.id}`}
               >
                 <TableCell className="font-medium">{m.label}</TableCell>
@@ -95,14 +95,14 @@ export function MeasurementTable({
                       <Check className="size-3" /> Confirmed
                     </Badge>
                   ) : flagged ? (
-                    <Badge variant="outline" className="gap-1 border-amber-500 text-amber-800">
+                    <Badge variant="outline" className="gap-1 border-accent/60 text-accent">
                       <AlertTriangle className="size-3" /> Flagged
                     </Badge>
                   ) : (
                     <Badge variant="secondary">OK</Badge>
                   )}
                   {(m.flagReason || flag?.message) && (
-                    <p className="mt-1 max-w-xs text-xs text-amber-800/90">
+                    <p className="mt-1 max-w-xs text-xs text-muted-foreground">
                       {m.flagReason || flag?.message}
                     </p>
                   )}
