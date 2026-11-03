@@ -1,0 +1,17 @@
+{
+  "recordedAt": "2026-11-03T21:50:28.774Z",
+  "durationSecApprox": 197.8,
+  "baseUrl": "http://127.0.0.1:43123",
+  "screenshots": [
+    "01-hero.png",
+    "02-problem.png",
+    "03-sample-selected.png",
+    "04-vision-bboxes.png",
+    "05-tools-computed.png",
+    "06-calibration-chart.png",
+    "07-verifier.png",
+    "08-report.png",
+    "09-close.png"
+  ],
+  "video": "benchmate-demo.webm"
+}

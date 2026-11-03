@@ -1,21 +1,20 @@
-# Syncing the full BenchMate tree to GitHub
+# Syncing to https://github.com/LuxologyGG/benchmate
 
-The Cursor cloud agent authenticated to **GitHub MCP** (file API) but **not** to `git push` / `gh` for `github.com`.
+The cloud agent can use **GitHub MCP** (REST file commits) but does **not** have `git push` / `gh` credentials for github.com.
 
-Origin (Cursor) already has the complete `main` branch including sample PNGs and the ~3 min demo video under `artifacts/`.
+- Cursor `origin` remote already has the complete `main` branch (samples + demo video).
+- Public GitHub currently has a partial bootstrap via MCP.
 
-To force-push that full tree here:
+### One-command full sync (recommended)
 
 ```bash
-# from a machine with the Cursor remote or a clone of this worktree:
-git remote add github https://github.com/LuxologyGG/benchmate.git
+export GITHUB_TOKEN=ghp_xxx   # repo scope; never commit this
+./scripts/push-to-github.sh
+```
+
+Or with SSH configured for LuxologyGG:
+
+```bash
+git remote add github git@github.com:LuxologyGG/benchmate.git
 git push -u github main --force
 ```
-
-Or create a PAT with `repo` scope and:
-
-```bash
-git push https://<TOKEN>@github.com/LuxologyGG/benchmate.git main --force
-```
-
-Do **not** commit `uploads/`, `.env.local`, or any `meta_api_key*` file.
