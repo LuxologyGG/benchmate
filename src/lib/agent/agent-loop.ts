@@ -35,7 +35,7 @@ export async function runCalculationAgent(input: {
     },
     {
       role: "user",
-      content: `Extracted lab data:\n${JSON.stringify(input.extraction, null, 2)}\n\nRun the appropriate calculations for a ${sampleId} lab report. Use linear_regression for calibration curves, molarity/dilution for titration/solution prep, percent_error and propagate_uncertainty for error analysis.`,
+      content: `Extracted lab data:\n${JSON.stringify(input.extraction, null, 2)}\n\nRun the appropriate calculations for a ${sampleId} lab report. Use linear_regression for calibration curves, molarity/dilution for titration/solution prep, compute_cfu for colony plates (CFU/mL = N/(V×D)), percent_error and propagate_uncertainty for error analysis.`,
     },
   ];
 

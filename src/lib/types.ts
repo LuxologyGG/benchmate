@@ -1,4 +1,8 @@
-export type LabSampleId = "beers-law" | "titration" | "balance";
+export type LabSampleId =
+  | "beers-law"
+  | "titration"
+  | "balance"
+  | "colony-plate";
 
 export type MeasurementKind =
   | "mass"
@@ -8,6 +12,11 @@ export type MeasurementKind =
   | "temperature"
   | "wavelength"
   | "time"
+  | "colony-count"
+  | "cfu"
+  | "area"
+  | "confluence"
+  | "intensity"
   | "other";
 
 export interface BoundingBox {
@@ -41,7 +50,23 @@ export interface ExtractedMeasurement {
 export interface ExtractionResult {
   sampleId?: LabSampleId;
   experimentTitle: string;
-  experimentType: "beers-law" | "titration" | "gravimetric" | "other";
+  experimentType:
+    | "beers-law"
+    | "titration"
+    | "gravimetric"
+    | "colony-count"
+    | "other";
+  /** Present when SAM quantifier ran (colony / gel / confluence). */
+  quantitation?: {
+    mode: "colony" | "gel-densitometry" | "confluence";
+    colonyCount?: number;
+    cfuPerMl?: number;
+    platedVolumeMl?: number;
+    dilutionFactor?: number;
+    percentConfluence?: number;
+    bandCount?: number;
+    notes?: string[];
+  };
   summary: string;
   measurements: ExtractedMeasurement[];
   boundingBoxes: BoundingBox[];

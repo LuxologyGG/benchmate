@@ -14,7 +14,7 @@ export async function POST(req: Request) {
     const boundingBoxes = await segmentReadouts(body);
     return NextResponse.json({
       boundingBoxes,
-      note: "Live path: Meta SAM 3.1 (sam-3.1) via Responses API; DEMO_MODE uses fixtures; Muse Spark vision is the fallback.",
+      note: "Live path: Meta SAM 3.1 (sam-3.1) via Responses API. Prefer /api/quant (colony CFU) and /api/readout (SAM-crop→Spark). DEMO_MODE uses fixtures.",
     });
   } catch (err) {
     return NextResponse.json(
