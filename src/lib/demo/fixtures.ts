@@ -6,7 +6,14 @@ import type {
   VerificationResult,
 } from "@/lib/types";
 import {
+  DEMO_COLONY_COUNT,
+  DEMO_COLONY_EXPECTED_CFU,
+  getDemoColonyParams,
+  getDemoColonySegmentations,
+} from "@/lib/demo/colony-fixtures";
+import {
   beersLawConcentration,
+  computeCfu,
   linearRegression,
   molarity,
   percentError,
@@ -38,6 +45,15 @@ export const SAMPLE_META: Record<
     title: "Analytical Balance — Salt Masses",
     description: "Digital balance screen with solid sample masses for molarity prep.",
     imageFiles: ["/samples/balance-screen.png"],
+  },
+  "colony-plate": {
+    title: "Petri Dish — Colony CFU Count",
+    description:
+      "SAM 3.1 segments colonies; deterministic code counts, areas, and CFU/mL (hero demo).",
+    imageFiles: [
+      "/samples/colony-plate.png",
+      "/samples/colony-plate-label.png",
+    ],
   },
 };
 
@@ -421,6 +437,118 @@ function balanceExtraction(): ExtractionResult {
   };
 }
 
+function colonyExtraction(): ExtractionResult {
+  const segs = getDemoColonySegmentations();
+  const params = getDemoColonyParams();
+  const cfu = computeCfu({
+    colonyCount: DEMO_COLONY_COUNT,
+    platedVolumeMl: params.platedVolumeMl ?? 0.1,
+    dilutionFactor: params.dilutionFactor ?? 1e-4,
+  });
+  const boxes = segs.map((s) => ({
+    id: s.id,
+    label: s.label,
+    x: s.bbox[0],
+    y: s.bbox[1],
+    width: s.bbox[2],
+    height: s.bbox[3],
+    confidence: s.score,
+  }));
+  const meanArea =
+    segs.reduce((a, s) => a + s.bbox[2] * s.bbox[3], 0) / Math.max(segs.length, 1);
+
+  return {
+    sampleId: "colony-plate",
+    experimentTitle: "E. coli colony counting on LB agar",
+    experimentType: "colony-count",
+    summary: `DEMO: SAM-style segmentation of ${DEMO_COLONY_COUNT} colonies. CFU/mL = ${DEMO_COLONY_EXPECTED_CFU.toExponential(2)} (V=${params.platedVolumeMl} mL, D=${params.dilutionFactor}).`,
+    provider: "demo",
+    model: "demo-fixture",
+    boundingBoxes: boxes,
+    tables: [
+      {
+        id: "colony-summary",
+        title: "Colony quantification",
+        headers: ["Metric", "Value"],
+        rows: [
+          ["Colony count", String(DEMO_COLONY_COUNT)],
+          ["Plated volume (mL)", String(params.platedVolumeMl)],
+          ["Dilution factor", String(params.dilutionFactor)],
+          ["CFU/mL", cfu.cfuPerMl.toExponential(3)],
+          ["Mean colony area (norm)", meanArea.toExponential(3)],
+        ],
+      },
+    ],
+    measurements: [
+      {
+        id: "c-count",
+        label: "Colony count",
+        value: DEMO_COLONY_COUNT,
+        unit: "colonies",
+        significantFigures: 2,
+        kind: "colony-count",
+        sourceImageId: "img-0",
+        rawText: String(DEMO_COLONY_COUNT),
+        confidence: 0.95,
+      },
+      {
+        id: "c-vol",
+        label: "Plated volume",
+        value: params.platedVolumeMl ?? 0.1,
+        unit: "mL",
+        significantFigures: 1,
+        kind: "volume",
+        sourceImageId: "img-1",
+        rawText: `${params.platedVolumeMl} mL`,
+        confidence: 0.99,
+      },
+      {
+        id: "c-dil",
+        label: "Dilution factor",
+        value: params.dilutionFactor ?? 1e-4,
+        unit: "",
+        significantFigures: 1,
+        kind: "other",
+        sourceImageId: "img-1",
+        rawText: String(params.dilutionFactor),
+        confidence: 0.99,
+      },
+      {
+        id: "c-cfu",
+        label: "CFU/mL",
+        value: cfu.cfuPerMl,
+        unit: "CFU/mL",
+        significantFigures: 2,
+        kind: "cfu",
+        sourceImageId: "img-0",
+        rawText: cfu.cfuPerMl.toExponential(2),
+        confidence: 0.94,
+        flagged: true,
+        flagReason: "Confirm dilution series label (10⁻⁴) matches plate metadata.",
+      },
+      {
+        id: "c-area",
+        label: "Mean colony area (normalized)",
+        value: meanArea,
+        unit: "norm²",
+        significantFigures: 3,
+        kind: "area",
+        sourceImageId: "img-0",
+        rawText: meanArea.toExponential(3),
+        confidence: 0.9,
+      },
+    ],
+    quantitation: {
+      mode: "colony",
+      colonyCount: DEMO_COLONY_COUNT,
+      cfuPerMl: cfu.cfuPerMl,
+      platedVolumeMl: params.platedVolumeMl,
+      dilutionFactor: params.dilutionFactor,
+      notes: ["DEMO_MODE fixture SAM segmentations"],
+    },
+  };
+}
+
 export function getDemoExtraction(sampleId: LabSampleId): ExtractionResult {
   switch (sampleId) {
     case "beers-law":
@@ -429,6 +557,8 @@ export function getDemoExtraction(sampleId: LabSampleId): ExtractionResult {
       return titrationExtraction();
     case "balance":
       return balanceExtraction();
+    case "colony-plate":
+      return colonyExtraction();
   }
 }
 
@@ -721,6 +851,81 @@ export function getDemoAgent(sampleId: LabSampleId): AgentResult {
     };
   }
 
+  if (sampleId === "colony-plate") {
+    const params = getDemoColonyParams();
+    const cfu = computeCfu({
+      colonyCount: DEMO_COLONY_COUNT,
+      platedVolumeMl: params.platedVolumeMl ?? 0.1,
+      dilutionFactor: params.dilutionFactor ?? 1e-4,
+    });
+    return {
+      plan: "Count SAM-segmented colonies, then compute CFU/mL = N / (V × D) with plated volume and dilution.",
+      provider: "demo",
+      model: "demo-fixture",
+      steps: [
+        {
+          id: "s1",
+          type: "plan",
+          content:
+            "1) Use colony count from SAM quantifier. 2) compute_cfu with V and D from plate label.",
+          timestamp: now(),
+        },
+        {
+          id: "s2",
+          type: "tool_call",
+          content: "CFU/mL from colony count",
+          toolName: "compute_cfu",
+          toolInput: {
+            colonyCount: DEMO_COLONY_COUNT,
+            platedVolumeMl: params.platedVolumeMl,
+            dilutionFactor: params.dilutionFactor,
+          },
+          toolOutput: cfu as unknown as Record<string, unknown>,
+          timestamp: now(),
+        },
+        {
+          id: "s3",
+          type: "final",
+          content: `${DEMO_COLONY_COUNT} colonies → ${cfu.cfuPerMl.toExponential(2)} CFU/mL`,
+          timestamp: now(),
+        },
+      ],
+      computed: [
+        {
+          id: "c-count",
+          label: "Colony count (SAM)",
+          value: DEMO_COLONY_COUNT,
+          unit: "colonies",
+          significantFigures: 2,
+          citation: {
+            toolName: "sam_quantifier",
+            input: { mode: "colony" },
+            output: { colonyCount: DEMO_COLONY_COUNT },
+            usedFor: "Discrete colony segmentation count",
+          },
+        },
+        {
+          id: "c-cfu",
+          label: "CFU/mL",
+          value: cfu.cfuPerMl,
+          unit: "CFU/mL",
+          significantFigures: 2,
+          formula: cfu.formula,
+          citation: {
+            toolName: "compute_cfu",
+            input: {
+              colonyCount: DEMO_COLONY_COUNT,
+              platedVolumeMl: params.platedVolumeMl,
+              dilutionFactor: params.dilutionFactor,
+            },
+            output: cfu as unknown as Record<string, unknown>,
+            usedFor: "Viable cell density in stock",
+          },
+        },
+      ],
+    };
+  }
+
   // balance
   const moles = molarity({
     compute: "moles",
@@ -860,6 +1065,26 @@ export function getDemoVerification(sampleId: LabSampleId): VerificationResult {
       ],
     };
   }
+  if (sampleId === "colony-plate") {
+    return {
+      provider: "demo",
+      model: "demo-fixture",
+      overallConfidence: 0.92,
+      summary:
+        "Colony count 42 matches SAM fixture segmentations. Dilution label confirmation flagged.",
+      flags: [
+        {
+          id: "f1",
+          measurementId: "c-cfu",
+          severity: "warning",
+          code: "DILUTION_LABEL",
+          message:
+            "CFU/mL assumes 10⁻⁴ dilution from plate label — confirm against notebook before reporting.",
+          suggestion: "Match dilution series sticker / notebook entry.",
+        },
+      ],
+    };
+  }
   return {
     provider: "demo",
     model: "demo-fixture",
@@ -936,6 +1161,30 @@ export function buildDemoReport(
     };
   }
 
+  if (sampleId === "colony-plate") {
+    const cfu = agent.computed.find((c) => c.id === "c-cfu");
+    const sections = {
+      introduction: `Bacterial colony forming units (CFU) were quantified from a petri-dish photograph. Meta SAM 3.1 segmented discrete colonies; deterministic code counted colonies and computed CFU/mL.`,
+      methods: `An LB agar plate (10⁻⁴ dilution, 0.1 mL plated) was imaged. SAM 3.1 produced colony segmentations. Tool \`compute_cfu\` applied CFU/mL = N / (V × D). No LLM arithmetic was used for the reported density.`,
+      data: extraction.tables
+        .map(
+          (t) =>
+            `### ${t.title}\n\n| ${t.headers.join(" | ")} |\n| ${t.headers.map(() => "---").join(" | ")} |\n${t.rows.map((r) => `| ${r.join(" | ")} |`).join("\n")}`,
+        )
+        .join("\n\n"),
+      calculations: cfu?.formula ?? "CFU/mL = N / (V × D)",
+      results: computedLines,
+      errorAnalysis: `Primary uncertainties: overlapping colonies (under-count), edge colonies clipped by the dish rim, and dilution labeling. Confirm dilution series before publication.`,
+      conclusion: `Stock density ≈ **${cfu?.value.toExponential(2)} CFU/mL** from ${DEMO_COLONY_COUNT} counted colonies.`,
+    };
+    return {
+      title: extraction.experimentTitle,
+      markdown: formatMarkdown(extraction.experimentTitle, sections),
+      sections,
+      citations,
+    };
+  }
+
   const m = agent.computed.find((c) => c.id === "c-m");
   const sections = {
     introduction: `Solid NaCl was weighed on an analytical balance and dissolved in a 100.0 mL volumetric flask to prepare a solution of known molarity.`,
@@ -988,6 +1237,14 @@ ${sections.conclusion}
 
 export function inferSampleIdFromName(name: string): LabSampleId {
   const n = name.toLowerCase();
+  if (
+    n.includes("colony") ||
+    n.includes("petri") ||
+    n.includes("cfu") ||
+    n.includes("agar")
+  ) {
+    return "colony-plate";
+  }
   if (n.includes("titrat") || n.includes("burette") || n.includes("acid")) {
     return "titration";
   }

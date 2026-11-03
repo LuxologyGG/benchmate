@@ -25,6 +25,7 @@ import {
   FlaskConical,
   ImagePlus,
   Loader2,
+  CircleDot,
   Scale,
   Sparkles,
 } from "lucide-react";
@@ -56,7 +57,7 @@ async function fetchSampleAsDataUrl(path: string, name: string): Promise<ImageIt
 
 export function BenchMateApp() {
   const [health, setHealth] = useState<Health | null>(null);
-  const [sampleId, setSampleId] = useState<LabSampleId>("beers-law");
+  const [sampleId, setSampleId] = useState<LabSampleId>("colony-plate");
   const [images, setImages] = useState<ImageItem[]>([]);
   const [stage, setStage] = useState<
     "upload" | "running" | "confirm" | "done" | "error"
@@ -93,7 +94,7 @@ export function BenchMateApp() {
   }, []);
 
   useEffect(() => {
-    void loadSample("beers-law");
+    void loadSample("colony-plate");
   }, [loadSample]);
 
   const onFiles = async (files: FileList | null) => {
@@ -119,7 +120,11 @@ export function BenchMateApp() {
       setPipelineStage("extract");
       setDoneThrough(null);
       setProgress(12);
-      setStatusText("Muse Spark vision: transcribing readouts → structured JSON…");
+      setStatusText(
+        sampleId === "colony-plate"
+          ? "SAM 3.1 colony quantifier → deterministic CFU/mL…"
+          : "SAM-crop readouts → Muse Spark OCR → structured JSON…",
+      );
       const extractRes = await fetch("/api/extract", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -258,7 +263,13 @@ export function BenchMateApp() {
         id,
         ...SAMPLE_META[id],
         icon:
-          id === "beers-law" ? FlaskConical : id === "titration" ? Beaker : Scale,
+          id === "beers-law"
+            ? FlaskConical
+            : id === "titration"
+              ? Beaker
+              : id === "colony-plate"
+                ? CircleDot
+                : Scale,
       })),
     [],
   );
@@ -327,10 +338,10 @@ export function BenchMateApp() {
                 BenchMate
               </p>
               <h1 className="max-w-xl text-lg text-teal-50/90 md:text-xl">
-                Photos of handwritten notebooks and instrument readouts → a verified, formatted lab report.
+                SAM 3.1 colony counting + instrument OCR → a verified, formatted lab report.
               </h1>
               <p className="mt-3 max-w-lg text-sm text-teal-100/70">
-                Vision extraction · deterministic chemistry tools · verifier · report writer. Not a chatbot.
+                Petri-dish CFU hero · SAM-crop before Spark · deterministic tools · verifier. Not a chatbot.
               </p>
               <div className="mt-6 flex flex-wrap gap-3">
                 <Button
@@ -346,8 +357,8 @@ export function BenchMateApp() {
             <div className="relative hidden md:block">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src="/samples/beers-law-spectrophotometer.png"
-                alt="Spectrophotometer readout sample"
+                src="/samples/colony-plate.png"
+                alt="Petri dish colony plate sample"
                 className="h-full max-h-72 w-full rounded-2xl object-cover shadow-xl ring-1 ring-white/20 animate-in fade-in zoom-in-95 duration-1000"
               />
             </div>
@@ -398,11 +409,11 @@ export function BenchMateApp() {
                 1. Lab photos
               </CardTitle>
               <CardDescription>
-                Upload notebook / instrument photos, or load a built-in demo sample (Beer's law, titration, balance).
+                Upload notebook / instrument photos, or load a built-in demo sample (colony CFU hero, Beer&apos;s law, titration, balance).
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid gap-3 sm:grid-cols-3">
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                 {sampleCards.map((s) => {
                   const Icon = s.icon;
                   return (
