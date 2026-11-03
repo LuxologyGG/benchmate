@@ -16,9 +16,10 @@ import { AgentTracePanel } from "@/components/benchmate/agent-trace-panel";
 import { BoundingBoxOverlay } from "@/components/benchmate/bounding-box-overlay";
 import { MeasurementTable } from "@/components/benchmate/measurement-table";
 import { CalibrationChart } from "@/components/benchmate/calibration-chart";
+import { FigletSectionTitle, FigletWordmark } from "@/components/benchmate/ascii-header";
+import { AsciiBio, AsciiLoader } from "@/components/benchmate/ascii-bio";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
@@ -31,8 +32,26 @@ import {
   Loader2,
   CircleDot,
   Scale,
-  Sparkles,
 } from "lucide-react";
+
+function Panel({
+  children,
+  className = "",
+  testId,
+}: {
+  children: React.ReactNode;
+  className?: string;
+  testId?: string;
+}) {
+  return (
+    <section
+      data-testid={testId}
+      className={`border border-border/70 bg-card/50 animate-in fade-in slide-in-from-bottom-2 duration-500 ${className}`}
+    >
+      {children}
+    </section>
+  );
+}
 
 type Health = { demoMode: boolean; provider: string; model: string };
 
@@ -366,100 +385,107 @@ export function BenchMateApp() {
         !m.userConfirmed,
     ).length ?? 0;
 
+
+  const loaderContext =
+    sampleId === "colony-plate"
+      ? "extract"
+      : sampleId === "dilution-error"
+        ? "verify"
+        : pipelineStage === "extract"
+          ? "extract"
+          : pipelineStage === "compute"
+            ? "compute"
+            : pipelineStage === "verify"
+              ? "verify"
+              : pipelineStage === "report"
+                ? "report"
+                : "rotate";
+
   return (
-    <div className="relative min-h-screen overflow-x-hidden">
+    <div className="relative min-h-screen overflow-x-hidden bg-background text-foreground">
       <div className="pointer-events-none absolute inset-0 -z-10">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_oklch(0.93_0.03_210)_0%,_oklch(0.97_0.01_200)_45%,_oklch(0.98_0.005_180)_100%)]" />
-        <div
-          className="absolute inset-0 opacity-[0.35]"
-          style={{
-            backgroundImage:
-              "linear-gradient(oklch(0.75 0.03 220 / 0.15) 1px, transparent 1px), linear-gradient(90deg, oklch(0.75 0.03 220 / 0.15) 1px, transparent 1px)",
-            backgroundSize: "32px 32px",
-            maskImage: "linear-gradient(to bottom, black, transparent 85%)",
-          }}
-        />
+        <div className="absolute inset-0 bm-grid-bg opacity-60" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_oklch(0.2_0.04_125)_0%,_transparent_55%)]" />
       </div>
 
-      <header className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 pb-2 pt-6 md:px-6">
-        <div className="flex items-center gap-3">
-          <div className="flex size-10 items-center justify-center rounded-xl bg-teal-700 text-white shadow-lg shadow-teal-900/20">
-            <FlaskConical className="size-5" />
-          </div>
-          <div>
-            <p className="font-[family-name:var(--font-display)] text-xl tracking-tight text-teal-950 md:text-2xl">
-              BenchMate
-            </p>
-            <p className="text-xs text-muted-foreground">
-              Meta Global AI Developer Hackathon · Camron Farjami
-            </p>
-          </div>
+      <header className="mx-auto flex max-w-6xl items-center justify-between gap-4 border-b border-border/40 px-4 pb-4 pt-6 md:px-6">
+        <div className="min-w-0">
+          <FigletWordmark size="sm" className="text-accent" />
+          <p className="mt-1 text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+            Meta Global AI Developer Hackathon · Camron Farjami
+          </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex shrink-0 items-center gap-2">
           {health?.demoMode && (
-            <Badge variant="secondary" data-testid="demo-badge">
+            <Badge variant="secondary" data-testid="demo-badge" className="font-mono text-[10px]">
               DEMO_MODE
             </Badge>
           )}
-          <Badge variant="outline" className="hidden sm:inline-flex font-mono text-[10px]">
+          <Badge variant="outline" className="hidden font-mono text-[10px] sm:inline-flex">
             {health?.provider ?? "…"}/{health?.model ?? "…"}
           </Badge>
         </div>
       </header>
 
-      <main className="mx-auto max-w-6xl px-4 pb-20 pt-4 md:px-6">
-        {/* Hero */}
-        <section className="relative mb-10 overflow-hidden rounded-3xl border border-teal-900/10 bg-gradient-to-br from-teal-900 via-slate-800 to-cyan-900 text-white shadow-2xl shadow-teal-950/20">
-          <div
-            className="absolute inset-0 opacity-30"
-            style={{
-              backgroundImage:
-                "radial-gradient(circle at 20% 20%, oklch(0.7 0.12 175 / 0.5), transparent 40%), radial-gradient(circle at 80% 60%, oklch(0.65 0.1 220 / 0.4), transparent 45%)",
-            }}
-          />
-          <div className="relative grid gap-8 p-8 md:grid-cols-[1.2fr_0.8fr] md:p-12">
-            <div className="flex flex-col justify-center animate-in fade-in slide-in-from-bottom-4 duration-700">
-              <p className="mb-3 font-[family-name:var(--font-display)] text-4xl leading-[1.05] tracking-tight md:text-5xl lg:text-6xl">
-                BenchMate
-              </p>
-              <h1 className="max-w-xl text-lg text-teal-50/90 md:text-xl">
+      <main className="mx-auto max-w-6xl px-4 pb-20 pt-8 md:px-6">
+        <section className="relative mb-14 min-h-[70vh] border border-border/50 bg-[#080809]/80 animate-in fade-in duration-700 md:min-h-[78vh]">
+          <div className="pointer-events-none absolute inset-0 bm-noise opacity-40" />
+          <div className="relative flex min-h-[70vh] flex-col justify-between gap-10 p-6 md:min-h-[78vh] md:p-12">
+            <div className="flex items-start justify-between gap-6">
+              <FigletWordmark
+                size="lg"
+                className="max-w-full animate-in fade-in slide-in-from-bottom-3 duration-700"
+              />
+              <div className="hidden shrink-0 opacity-80 md:block animate-in fade-in duration-1000">
+                <AsciiBio
+                  context={sampleId === "colony-plate" ? "extract" : "rotate"}
+                  showLabel
+                />
+              </div>
+            </div>
+
+            <div className="max-w-xl space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-700 delay-150">
+              <h1 className="text-base leading-relaxed text-foreground/90 md:text-lg">
                 SAM 3.1 colony counting + instrument OCR → a verified, formatted lab report.
               </h1>
-              <p className="mt-3 max-w-lg text-sm text-teal-100/70">
-                Muse Wonder orchestrates SAM colony counting + Spark readout, catches protocol deviations, and writes the record — live agent trace included.
+              <p className="text-sm text-muted-foreground">
+                Muse Wonder orchestrates SAM colony counting + Spark readout, catches protocol
+                deviations, and writes the record — live agent trace included.
               </p>
-              <div className="mt-6 flex flex-wrap gap-3">
+              <div className="pt-2">
                 <Button
                   size="lg"
-                  className="bg-white text-teal-950 hover:bg-teal-50"
                   data-testid="cta-start"
-                  onClick={() => document.getElementById("workspace")?.scrollIntoView({ behavior: "smooth" })}
+                  className="border border-accent/40 bg-accent text-accent-foreground hover:bg-accent/90"
+                  onClick={() =>
+                    document.getElementById("workspace")?.scrollIntoView({ behavior: "smooth" })
+                  }
                 >
-                  <Sparkles className="size-4" /> Start with a sample lab
+                  $ start --sample
                 </Button>
               </div>
             </div>
-            <div className="relative hidden md:block">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src="/samples/colony-plate.png"
-                alt="Petri dish colony plate sample"
-                className="h-full max-h-72 w-full rounded-2xl object-cover shadow-xl ring-1 ring-white/20 animate-in fade-in zoom-in-95 duration-1000"
-              />
-            </div>
+
+            <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-muted-foreground/80">
+              colony CFU · dilution catch · agent trace · report
+            </p>
           </div>
         </section>
 
-        <div id="workspace" className="space-y-6">
+        <div id="workspace" className="space-y-8">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <PipelineProgress active={pipelineStage} doneThrough={doneThrough} />
             {(stage === "running" || progress > 0) && (
               <div className="w-full max-w-xs">
-                <Progress value={progress} className="h-2" data-testid="run-progress" />
+                <Progress value={progress} className="h-1" data-testid="run-progress" />
                 <p className="mt-1 text-xs text-muted-foreground">{statusText}</p>
               </div>
             )}
           </div>
+
+          {stage === "running" && (
+            <AsciiLoader context={loaderContext as "extract" | "compute" | "verify" | "report" | "rotate"} status={statusText} />
+          )}
 
           {error && (
             <Alert variant="destructive" data-testid="error-alert" role="alert">
@@ -498,7 +524,7 @@ export function BenchMateApp() {
             <Alert
               variant="destructive"
               data-testid="dilution-wow-alert"
-              className="border-rose-600/40 bg-rose-50 text-rose-950"
+              className="border-destructive/50 bg-destructive/10"
             >
               <AlertTriangle className="size-4" />
               <AlertTitle>
@@ -514,19 +540,15 @@ export function BenchMateApp() {
             </Alert>
           )}
 
-          {/* Upload / samples */}
-          <Card className="border-teal-900/10 shadow-sm">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-teal-950">
-                <ImagePlus className="size-5 text-teal-700" />
-                1. Lab photos
-              </CardTitle>
-              <CardDescription>
-                Upload photos or load a demo — try <strong>Petri Dish — Colony CFU Count</strong> or{" "}
-                <strong>Serial Dilution — 10× Protocol Catch</strong>.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
+          <Panel>
+            <div className="border-b border-border/50 px-5 py-4">
+              <FigletSectionTitle section="photos" />
+              <p className="mt-2 text-xs text-muted-foreground">
+                Upload photos or load a demo — try Petri Dish — Colony CFU Count or Serial Dilution —
+                10× Protocol Catch.
+              </p>
+            </div>
+            <div className="space-y-5 p-5">
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
                 {sampleCards.map((s) => {
                   const Icon = s.icon;
@@ -536,21 +558,21 @@ export function BenchMateApp() {
                       type="button"
                       data-testid={`sample-${s.id}`}
                       onClick={() => void loadSample(s.id)}
-                      className={`rounded-2xl border p-4 text-left transition hover:border-teal-600/50 hover:bg-teal-50/50 ${
+                      className={`border p-4 text-left transition-colors duration-300 hover:border-accent/50 ${
                         sampleId === s.id
-                          ? "border-teal-600 bg-teal-50/80 ring-2 ring-teal-500/20"
-                          : "border-border bg-background"
+                          ? "border-accent/70 bg-accent/5"
+                          : "border-border/60 bg-transparent"
                       }`}
                     >
-                      <Icon className="mb-2 size-5 text-teal-700" />
-                      <p className="font-medium text-teal-950">{s.title}</p>
+                      <Icon className="mb-2 size-4 text-accent" />
+                      <p className="text-sm text-foreground">{s.title}</p>
                       <p className="mt-1 text-xs text-muted-foreground">{s.description}</p>
                     </button>
                   );
                 })}
               </div>
 
-              <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-teal-700/30 bg-teal-50/30 px-6 py-8 text-center transition hover:bg-teal-50/60">
+              <label className="flex cursor-pointer flex-col items-center justify-center gap-2 border border-dashed border-border/70 px-6 py-10 text-center transition-colors hover:border-accent/40 hover:bg-accent/[0.03]">
                 <input
                   type="file"
                   accept="image/*"
@@ -559,15 +581,17 @@ export function BenchMateApp() {
                   data-testid="file-input"
                   onChange={(e) => void onFiles(e.target.files)}
                 />
-                <ImagePlus className="size-6 text-teal-700" />
-                <span className="text-sm font-medium">Drop photos or click to upload</span>
-                <span className="text-xs text-muted-foreground">PNG / JPEG · notebook pages, screens, burettes</span>
+                <ImagePlus className="size-5 text-accent" />
+                <span className="text-sm">Drop photos or click to upload</span>
+                <span className="text-xs text-muted-foreground">
+                  PNG / JPEG · notebook pages, screens, burettes, plates
+                </span>
               </label>
 
               {images.length > 0 && (
                 <div className="grid gap-3 sm:grid-cols-2" data-testid="image-preview-grid">
                   {images.map((img) => (
-                    <div key={img.id} className="overflow-hidden rounded-xl border">
+                    <div key={img.id} className="overflow-hidden border border-border/60">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img src={img.dataUrl} alt={img.name} className="h-40 w-full object-cover" />
                       <p className="truncate px-2 py-1 text-xs text-muted-foreground">{img.name}</p>
@@ -582,16 +606,14 @@ export function BenchMateApp() {
                   data-testid="run-pipeline"
                   disabled={!images.length || stage === "running"}
                   onClick={() => void runPipeline()}
-                  className="bg-teal-700 hover:bg-teal-800"
+                  className="bg-accent text-accent-foreground hover:bg-accent/90"
                 >
                   {stage === "running" && pipelineStage !== "report" ? (
                     <>
                       <Loader2 className="size-4 animate-spin" /> Wonder orchestrating…
                     </>
                   ) : (
-                    <>
-                      <Sparkles className="size-4" /> Run Wonder orchestration
-                    </>
+                    <>$ run wonder</>
                   )}
                 </Button>
                 {orchestratorModel && (
@@ -600,19 +622,18 @@ export function BenchMateApp() {
                   </Badge>
                 )}
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </Panel>
 
-          {/* Extraction + boxes */}
           {extraction && (
-            <Card className="border-teal-900/10 animate-in fade-in slide-in-from-bottom-2 duration-500">
-              <CardHeader>
-                <CardTitle className="text-teal-950">2. Vision extraction</CardTitle>
-                <CardDescription>
+            <Panel>
+              <div className="border-b border-border/50 px-5 py-4">
+                <FigletSectionTitle section="vision" />
+                <p className="mt-2 text-xs text-muted-foreground">
                   {extraction.experimentTitle} · model {extraction.model} ({extraction.provider})
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
+                </p>
+              </div>
+              <div className="space-y-4 p-5">
                 <p className="text-sm text-muted-foreground">{extraction.summary}</p>
                 {images[0] && (
                   <div className="space-y-2">
@@ -637,27 +658,26 @@ export function BenchMateApp() {
                   </div>
                 )}
                 <MeasurementTable measurements={extraction.measurements} />
-              </CardContent>
-            </Card>
+              </div>
+            </Panel>
           )}
 
-          {/* Agent tools */}
           {agent && (
-            <Card className="border-teal-900/10 animate-in fade-in duration-500">
-              <CardHeader>
-                <CardTitle className="text-teal-950">3. Tool-using agent</CardTitle>
-                <CardDescription>{agent.plan}</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
+            <Panel>
+              <div className="border-b border-border/50 px-5 py-4">
+                <FigletSectionTitle section="agent" />
+                <p className="mt-2 text-xs text-muted-foreground">{agent.plan}</p>
+              </div>
+              <div className="space-y-4 p-5">
                 <div className="space-y-2" data-testid="agent-steps">
                   {agent.steps
                     .filter((s) => s.type === "tool_call")
                     .map((s) => (
                       <div
                         key={s.id}
-                        className="rounded-lg border border-border/70 bg-muted/40 px-3 py-2 font-mono text-xs"
+                        className="border border-border/70 bg-muted/30 px-3 py-2 font-mono text-xs"
                       >
-                        <span className="text-teal-800">→ {s.toolName}</span>
+                        <span className="text-accent">→ {s.toolName}</span>
                         <span className="text-muted-foreground">
                           {" "}
                           {JSON.stringify(s.toolInput).slice(0, 120)}
@@ -668,14 +688,14 @@ export function BenchMateApp() {
                 </div>
                 <div className="grid gap-2 sm:grid-cols-2" data-testid="computed-values">
                   {agent.computed.map((c) => (
-                    <div key={c.id} className="rounded-xl border bg-white/70 p-3">
+                    <div key={c.id} className="border border-border/60 px-3 py-3">
                       <p className="text-xs text-muted-foreground">{c.label}</p>
-                      <p className="font-mono text-lg text-teal-950">
+                      <p className="font-mono text-lg text-accent">
                         {Number(c.value).toPrecision(c.significantFigures)}{" "}
                         <span className="text-sm text-muted-foreground">{c.unit}</span>
                       </p>
-                      <p className="mt-1 text-[11px] text-teal-800">
-                        tool: <code>{c.citation.toolName}</code>
+                      <p className="mt-1 text-[11px] text-muted-foreground">
+                        tool: <code className="text-foreground/80">{c.citation.toolName}</code>
                       </p>
                     </div>
                   ))}
@@ -683,25 +703,26 @@ export function BenchMateApp() {
                 {agent.chartSeries?.[0] && (
                   <CalibrationChart series={agent.chartSeries[0]} />
                 )}
-              </CardContent>
-            </Card>
+              </div>
+            </Panel>
           )}
 
-          {/* Verify / confirm */}
           {verification && extraction && (
-            <Card className="border-teal-900/10 animate-in fade-in duration-500" data-testid="verify-panel">
-              <CardHeader>
-                <CardTitle className="text-teal-950">4. Verifier</CardTitle>
-                <CardDescription>{verification.summary}</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
+            <Panel testId="verify-panel">
+              <div className="border-b border-border/50 px-5 py-4">
+                <FigletSectionTitle section="verify" />
+                <p className="mt-2 text-xs text-muted-foreground">{verification.summary}</p>
+              </div>
+              <div className="space-y-4 p-5">
                 <div className="flex flex-wrap items-center gap-2">
                   <Badge variant="secondary">
                     Confidence {(verification.overallConfidence * 100).toFixed(0)}%
                   </Badge>
                   <Badge variant="outline">{verification.flags.length} flag(s)</Badge>
                   {flaggedLeft > 0 && (
-                    <Badge className="bg-amber-600">{flaggedLeft} need confirmation</Badge>
+                    <Badge className="bg-accent text-accent-foreground">
+                      {flaggedLeft} need confirmation
+                    </Badge>
                   )}
                 </div>
                 <MeasurementTable
@@ -717,7 +738,7 @@ export function BenchMateApp() {
                   </Button>
                   <Button
                     data-testid="generate-report"
-                    className="bg-teal-700 hover:bg-teal-800"
+                    className="bg-accent text-accent-foreground hover:bg-accent/90"
                     disabled={stage === "running"}
                     onClick={() => void generateReport()}
                   >
@@ -732,17 +753,16 @@ export function BenchMateApp() {
                     )}
                   </Button>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </Panel>
           )}
 
-          {/* Report */}
           {report && (
-            <Card className="border-teal-900/10 animate-in fade-in duration-700" data-testid="report-panel">
-              <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-3">
+            <Panel testId="report-panel">
+              <div className="flex flex-row flex-wrap items-start justify-between gap-3 border-b border-border/50 px-5 py-4">
                 <div>
-                  <CardTitle className="text-teal-950">5. Lab report</CardTitle>
-                  <CardDescription>{report.title}</CardDescription>
+                  <FigletSectionTitle section="report" />
+                  <p className="mt-2 text-xs text-muted-foreground">{report.title}</p>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   <Button
@@ -770,24 +790,24 @@ export function BenchMateApp() {
                     <Download className="size-3" /> DOCX
                   </Button>
                 </div>
-              </CardHeader>
-              <CardContent>
+              </div>
+              <div className="p-5">
                 <article
-                  className="prose prose-sm max-w-none rounded-xl border bg-white/80 p-6 font-[family-name:var(--font-body)] prose-headings:font-[family-name:var(--font-display)] prose-headings:text-teal-950"
+                  className="border border-border/60 bg-[#070708] p-6"
                   data-testid="report-markdown"
                 >
-                  <pre className="whitespace-pre-wrap font-[family-name:var(--font-body)] text-sm leading-relaxed text-foreground">
+                  <pre className="whitespace-pre-wrap font-mono text-sm leading-relaxed text-foreground/90">
                     {report.markdown}
                   </pre>
                 </article>
-              </CardContent>
-            </Card>
+              </div>
+            </Panel>
           )}
         </div>
       </main>
 
-      <footer className="border-t border-border/60 bg-white/50 py-6 text-center text-xs text-muted-foreground">
-        BenchMate · MIT License · Built for the Meta Global AI Developer Hackathon by Camron Farjami (U-M)
+      <footer className="border-t border-border/40 py-6 text-center text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
+        BenchMate · MIT · Meta Global AI Developer Hackathon · Camron Farjami (U-M)
       </footer>
     </div>
   );

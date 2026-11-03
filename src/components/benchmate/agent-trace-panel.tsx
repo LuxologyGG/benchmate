@@ -2,87 +2,52 @@
 
 import { cn } from "@/lib/utils";
 import type { AgentRole, ProtocolDeviation, TraceEvent } from "@/lib/types";
-import {
-  AlertTriangle,
-  Bot,
-  CheckCircle2,
-  Cpu,
-  Eye,
-  FileText,
-  FlaskConical,
-  GitBranch,
-  Loader2,
-  Scale,
-  ShieldCheck,
-  Sparkles,
-} from "lucide-react";
+import { AlertTriangle, CheckCircle2, Loader2 } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
-const ROLE_META: Record<
-  AgentRole,
-  { label: string; icon: typeof Bot; tone: string }
-> = {
-  orchestrator: {
-    label: "Wonder",
-    icon: Sparkles,
-    tone: "text-cyan-800 bg-cyan-50 border-cyan-200",
-  },
-  sam_quantifier: {
-    label: "SAM 3.1",
-    icon: Eye,
-    tone: "text-violet-800 bg-violet-50 border-violet-200",
-  },
-  spark_readout: {
-    label: "Spark",
-    icon: Bot,
-    tone: "text-teal-800 bg-teal-50 border-teal-200",
-  },
-  calc_agent: {
-    label: "Calc",
-    icon: Scale,
-    tone: "text-sky-800 bg-sky-50 border-sky-200",
-  },
-  verifier: {
-    label: "Verifier",
-    icon: ShieldCheck,
-    tone: "text-amber-900 bg-amber-50 border-amber-200",
-  },
-  critic: {
-    label: "Critic",
-    icon: GitBranch,
-    tone: "text-orange-900 bg-orange-50 border-orange-200",
-  },
-  protocol_check: {
-    label: "Protocol",
-    icon: FlaskConical,
-    tone: "text-rose-900 bg-rose-50 border-rose-200",
-  },
-  report_writer: {
-    label: "Report",
-    icon: FileText,
-    tone: "text-slate-800 bg-slate-50 border-slate-200",
-  },
+const ROLE_META: Record<AgentRole, { label: string; prefix: string }> = {
+  orchestrator: { label: "wonder", prefix: "::" },
+  sam_quantifier: { label: "sam_3.1", prefix: "→" },
+  spark_readout: { label: "spark", prefix: "→" },
+  calc_agent: { label: "calc", prefix: "→" },
+  verifier: { label: "verifier", prefix: "←" },
+  critic: { label: "critic", prefix: "←" },
+  protocol_check: { label: "protocol", prefix: "!" },
+  report_writer: { label: "report", prefix: "##" },
 };
 
-function kindAccent(kind: TraceEvent["kind"]): string {
+function kindClass(kind: TraceEvent["kind"]): string {
   switch (kind) {
     case "protocol_deviation":
-      return "border-l-rose-600 bg-rose-50/80";
+      return "text-destructive";
     case "disagreement":
-      return "border-l-amber-500 bg-amber-50/60";
+      return "text-accent";
     case "resolution":
-      return "border-l-emerald-600 bg-emerald-50/70";
+      return "text-accent";
     case "error":
-      return "border-l-red-600 bg-red-50/70";
+      return "text-destructive";
     case "done":
-      return "border-l-teal-700 bg-teal-50/50";
+      return "text-accent";
     case "tool_call":
-      return "border-l-sky-500 bg-sky-50/40";
+      return "text-accent";
     default:
-      return "border-l-teal-600/40 bg-white/70";
+      return "text-foreground/85";
   }
+}
+
+function formatTs(iso: string | undefined, index: number): string {
+  if (iso) {
+    try {
+      return new Date(iso).toISOString().slice(11, 19);
+    } catch {
+      /* fall through */
+    }
+  }
+  const s = index;
+  const d = new Date(0, 0, 0, 0, 0, s);
+  return d.toTimeString().slice(0, 8);
 }
 
 export function AgentTracePanel({
@@ -102,98 +67,99 @@ export function AgentTracePanel({
 
   return (
     <div
-      className="overflow-hidden rounded-2xl border border-teal-900/10 bg-gradient-to-b from-slate-950 to-teal-950 text-teal-50 shadow-lg shadow-teal-950/20"
+      className="overflow-hidden border border-border/70 bg-[#070708] animate-in fade-in duration-500"
       data-testid="agent-trace-panel"
       aria-live="polite"
     >
-      <div className="flex items-center justify-between gap-3 border-b border-white/10 px-4 py-3">
+      <div className="flex items-center justify-between gap-3 border-b border-border/50 px-4 py-2.5">
         <div className="flex items-center gap-2">
-          <Cpu className="size-4 text-cyan-300" />
-          <p className="font-[family-name:var(--font-display)] text-sm tracking-wide">
-            Live agent trace
+          <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-accent">
+            agent_trace
           </p>
           {running && (
-            <Loader2 className="size-3.5 animate-spin text-cyan-300" aria-label="Running" />
+            <Loader2 className="size-3.5 animate-spin text-accent" aria-label="Running" />
           )}
         </div>
         <div className="flex items-center gap-2">
-          <Badge variant="secondary" className="bg-white/10 text-[10px] text-cyan-100">
+          <Badge variant="secondary" className="font-mono text-[10px]">
             muse-wonder-1.0
           </Badge>
-          <span className="font-mono text-[10px] text-teal-200/70">{events.length} steps</span>
+          <span className="font-mono text-[10px] text-muted-foreground">
+            {events.length} steps
+          </span>
         </div>
       </div>
 
       {deviations && deviations.length > 0 && (
         <div
-          className="flex items-start gap-2 border-b border-rose-400/30 bg-rose-600/30 px-4 py-3"
+          className="flex items-start gap-2 border-b border-destructive/40 bg-destructive/10 px-4 py-3"
           data-testid="protocol-deviation-banner"
         >
-          <AlertTriangle className="mt-0.5 size-4 shrink-0 text-rose-200" />
+          <AlertTriangle className="mt-0.5 size-4 shrink-0 text-destructive" />
           <div>
-            <p className="text-sm font-semibold text-rose-50">
-              Protocol deviation caught
+            <p className="font-mono text-sm text-destructive">
+              PROTOCOL DEVIATION
               {deviations[0].factor ? ` · ${deviations[0].factor}×` : ""}
             </p>
-            <p className="mt-0.5 text-xs text-rose-100/90">{deviations[0].message}</p>
+            <p className="mt-0.5 text-xs text-muted-foreground">{deviations[0].message}</p>
           </div>
         </div>
       )}
 
       <ScrollArea className="h-[min(420px,50vh)]">
-        <ol className="space-y-2 p-3" data-testid="agent-trace-list">
+        <ol className="space-y-0.5 p-3 font-mono text-[11px] leading-relaxed sm:text-xs" data-testid="agent-trace-list">
           {events.length === 0 && (
-            <li className="rounded-lg border border-dashed border-white/15 px-3 py-6 text-center text-xs text-teal-200/60">
+            <li className="border border-dashed border-border/50 px-3 py-6 text-center text-xs text-muted-foreground">
               Trace appears here as Wonder dispatches specialists…
             </li>
           )}
-          {events.map((ev) => {
+          {events.map((ev, i) => {
             const meta = ROLE_META[ev.role] ?? ROLE_META.orchestrator;
-            const Icon = meta.icon;
             return (
               <li
                 key={ev.id}
                 className={cn(
-                  "animate-in fade-in slide-in-from-bottom-1 duration-300 rounded-lg border border-white/5 border-l-4 px-3 py-2",
-                  kindAccent(ev.kind),
+                  "flex gap-2 animate-in fade-in slide-in-from-left-1 duration-300",
+                  kindClass(ev.kind),
                 )}
                 data-kind={ev.kind}
                 data-role={ev.role}
               >
-                <div className="flex flex-wrap items-center gap-2">
-                  <span
-                    className={cn(
-                      "inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-[10px] font-medium",
-                      meta.tone,
-                    )}
-                  >
-                    <Icon className="size-3" />
-                    {meta.label}
-                  </span>
-                  <span className="font-mono text-[10px] uppercase tracking-wider text-teal-900/50">
-                    {ev.kind.replace(/_/g, " ")}
-                  </span>
-                  {ev.model && (
-                    <span className="ml-auto font-mono text-[10px] text-teal-900/40">
-                      {ev.model}
+                <span className="shrink-0 text-muted-foreground/70 tabular-nums">
+                  {formatTs(ev.timestamp, i)}
+                </span>
+                <span className="shrink-0 text-muted-foreground/50">{meta.prefix}</span>
+                <span className="shrink-0 text-muted-foreground">{meta.label}</span>
+                <span className="min-w-0">
+                  <span className="text-foreground/90">{ev.title}</span>
+                  {ev.detail && (
+                    <span className="mt-0.5 block text-[10px] text-muted-foreground">
+                      {ev.detail}
                     </span>
                   )}
-                </div>
-                <p className="mt-1 text-sm font-medium text-teal-950">{ev.title}</p>
-                {ev.detail && (
-                  <p className="mt-0.5 text-xs leading-relaxed text-teal-900/70">{ev.detail}</p>
+                </span>
+                {ev.model && (
+                  <span className="ml-auto hidden shrink-0 text-[10px] text-muted-foreground/50 sm:inline">
+                    {ev.model}
+                  </span>
                 )}
               </li>
             );
           })}
+          {running && (
+            <li className="flex items-center gap-2 text-accent">
+              <span className="opacity-50">&gt;</span>
+              <span className="animate-pulse">▌</span>
+            </li>
+          )}
           <div ref={endRef} />
         </ol>
       </ScrollArea>
 
       {!running && events.some((e) => e.kind === "done") && (
-        <div className="flex items-center gap-2 border-t border-white/10 px-4 py-2 text-xs text-emerald-200">
+        <div className="flex items-center gap-2 border-t border-border/50 px-4 py-2 font-mono text-xs text-accent">
           <CheckCircle2 className="size-3.5" />
-          Orchestration complete
+          orchestration complete
         </div>
       )}
     </div>
