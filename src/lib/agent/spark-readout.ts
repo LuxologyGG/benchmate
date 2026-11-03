@@ -43,11 +43,8 @@ export interface SparkReadoutResult {
   notes: string[];
 }
 
-const READOUT_PROMPTS = [
-  "digital display",
-  "instrument numeric readout",
-  "LCD screen numbers",
-];
+// Short noun phrases — SAM 3.1 matches concrete nouns best
+const READOUT_PROMPTS = ["display", "screen", "number", "digit"];
 
 async function samLocalizeReadouts(
   dataUrl: string,
@@ -65,6 +62,7 @@ async function samLocalizeReadouts(
         seen.add(key);
         merged.push({ ...b, label: b.label || p, id: `${p.replace(/\s+/g, "-")}-${b.id}` });
       }
+      if (!prompt && merged.length >= 2) break;
     } catch (err) {
       console.warn(`SAM readout prompt "${p}" failed:`, err);
     }

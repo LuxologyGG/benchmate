@@ -1,0 +1,62 @@
+{
+  "generatedAt": "2026-11-03T23:17:27.869Z",
+  "mode": "LIVE Meta API — muse-wonder-1.0 / muse-spark-1.3 / sam-3.1",
+  "apiSpendUsdEstimate": 0.2544,
+  "spendCapUsd": 35,
+  "spendSummary": {
+    "capUsd": 35,
+    "totalUsd": 0.2544,
+    "remainingUsd": 34.7456,
+    "calls": 11,
+    "haltedReason": null
+  },
+  "comparison": {
+    "hero": {
+      "groundTruthCount": 42,
+      "groundTruthCfuPerMl": 4200000,
+      "demo": {
+        "predictedCount": 42,
+        "predictedCfuPerMl": 4200000,
+        "usedSam": false
+      },
+      "live": {
+        "predictedCount": 42,
+        "predictedCfuPerMl": 4200000,
+        "usedSam": true,
+        "demoMode": false,
+        "absError": 0,
+        "exact": true,
+        "within10pct": true,
+        "notes": [
+          "SAM 3.1 segmented 42 colonies → 4.20e+6 CFU/mL."
+        ]
+      }
+    },
+    "plate_001": {
+      "groundTruthCount": 5,
+      "livePredicted": 5,
+      "absError": 0,
+      "within10pct": true,
+      "usedSam": true
+    },
+    "gel_001": {
+      "groundTruthCount": 15,
+      "livePredicted": 7,
+      "absError": 8,
+      "within10pct": false,
+      "usedSam": true,
+      "mode": "gel-densitometry"
+    },
+    "dilution": {
+      "liveCaught": true,
+      "traceCount": 25,
+      "orchestratorModel": "muse-wonder-1.0"
+    },
+    "wonderColony": {
+      "ok": true,
+      "traceCount": 21,
+      "orchestratorModel": "muse-wonder-1.0",
+      "provider": "meta"
+    }
+  }
+}

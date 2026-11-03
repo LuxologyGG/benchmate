@@ -336,11 +336,8 @@ export async function segmentReadouts(input: {
   }
 
   try {
-    const prompts = [
-      "digital display",
-      "handwritten data table",
-      "burette meniscus",
-    ];
+    // Short noun phrases — SAM 3.1 matches concrete nouns best
+    const prompts = ["display", "screen", "table", "meniscus", "number"];
     const merged: ExtractionResult["boundingBoxes"] = [];
     for (const prompt of prompts) {
       try {
@@ -351,6 +348,7 @@ export async function segmentReadouts(input: {
         for (const b of boxes) {
           merged.push({ ...b, label: b.label || prompt, id: `${prompt}-${b.id}` });
         }
+        if (merged.length >= 4) break;
       } catch (err) {
         console.warn(`SAM 3.1 prompt "${prompt}" failed:`, err);
       }

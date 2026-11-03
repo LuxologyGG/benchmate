@@ -56,7 +56,10 @@ function normalizeBBox(
 
 /**
  * Call Meta SAM 3.1 Segment via Model API (Responses API).
- * Docs: https://dev.meta.ai/docs/overview — model `sam-3.1`
+ * Docs: https://dev.meta.ai/docs/sam/overview — model `sam-3.1`
+ *
+ * Output is special-token grammar (not JSON):
+ *   <0f>0<|box;x1=..;y1=..;x2=..;y2=..;w=..;h=..;c=..|><|mask;...|>,1<|box;...|>...
  */
 export async function segmentWithSam31(input: {
   dataUrl: string;
@@ -100,31 +103,105 @@ export async function segmentSam31Typed(input: {
         ],
       },
     ],
+    // one_bit keeps masks small; include_confidence adds `c=` on boxes
+    metadata: {
+      mask_encoding: "one_bit",
+      include_confidence: "true",
+    },
   } as Parameters<typeof client.responses.create>[0]);
 
   return parseSamSegmentations(response, prompt);
 }
 
-function parseSamSegmentations(response: unknown, prompt: string): Segmentation[] {
+/** Extract output_text from a Responses API payload (OpenAI SDK or raw fetch). */
+export function extractSamOutputText(response: unknown): string {
+  const obj = response as {
+    output_text?: string;
+    output?: Array<{
+      type?: string;
+      content?: Array<{ type?: string; text?: string }>;
+    }>;
+  };
+  if (typeof obj.output_text === "string" && obj.output_text.length) {
+    return obj.output_text;
+  }
+  const parts: string[] = [];
+  for (const item of obj.output ?? []) {
+    for (const c of item.content ?? []) {
+      if (c.type === "output_text" && typeof c.text === "string") {
+        parts.push(c.text);
+      } else if (typeof c.text === "string" && c.text.includes("<|box;")) {
+        parts.push(c.text);
+      }
+    }
+  }
+  return parts.join("\n");
+}
+
+/**
+ * Parse Meta SAM 3.1 special-token box grammar into normalized segmentations.
+ * Pixel boxes are converted to 0–1 using the `w`/`h` source dimensions on each record.
+ */
+export function parseSamSpecialTokenText(
+  text: string,
+  prompt: string,
+): Segmentation[] {
+  const out: Segmentation[] = [];
+  if (!text || !text.includes("<|box;")) return out;
+
+  // Match object-id + box token. Mask payloads are ignored for colony counting.
+  const recordRe =
+    /(\d+)\s*<\|box;([^|>]+)\|>/g;
+  let match: RegExpExecArray | null;
+  while ((match = recordRe.exec(text)) !== null) {
+    const objectId = match[1];
+    const fields = parseSamFieldList(match[2]);
+    const x1 = Number(fields.x1);
+    const y1 = Number(fields.y1);
+    const x2 = Number(fields.x2);
+    const y2 = Number(fields.y2);
+    const srcW = Number(fields.w) || 0;
+    const srcH = Number(fields.h) || 0;
+    if (!(srcW > 0 && srcH > 0) || !Number.isFinite(x1) || !Number.isFinite(y1)) {
+      continue;
+    }
+    const widthPx = Math.max(0, x2 - x1);
+    const heightPx = Math.max(0, y2 - y1);
+    const score = fields.c != null ? Number(fields.c) : 0.85;
+    out.push({
+      id: `sam-${objectId}`,
+      label: prompt,
+      score: Number.isFinite(score) ? score : 0.85,
+      bbox: normalizeBBox(x1 / srcW, y1 / srcH, widthPx / srcW, heightPx / srcH),
+      maskRef: `sam-mask-${objectId}`,
+    });
+  }
+  return out;
+}
+
+function parseSamFieldList(raw: string): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const part of raw.split(";")) {
+    const eq = part.indexOf("=");
+    if (eq <= 0) continue;
+    out[part.slice(0, eq).trim()] = part.slice(eq + 1).trim();
+  }
+  return out;
+}
+
+export function parseSamSegmentations(
+  response: unknown,
+  prompt: string,
+): Segmentation[] {
   const out: Segmentation[] = [];
   try {
-    const obj = response as {
-      output_text?: string;
-      output?: Array<{
-        content?: Array<{ text?: string }>;
-      }>;
-    };
-    const text =
-      obj.output_text ??
-      obj.output
-        ?.flatMap((o) => o.content ?? [])
-        .map((c) => c.text)
-        .filter(Boolean)
-        .join("\n") ??
-      "";
+    const text = extractSamOutputText(response);
 
-    // Prefer JSON if the model returns it; otherwise tolerate empty (caller falls back)
-    if (text.includes("{") || text.includes("[")) {
+    // Primary: Meta SAM special-token grammar
+    if (text.includes("<|box;")) {
+      out.push(...parseSamSpecialTokenText(text, prompt));
+    } else if (text.includes("{") || text.includes("[")) {
+      // Legacy / fallback JSON shape (should not appear for sam-3.1)
       const startArr = text.indexOf("[");
       const startObj = text.indexOf("{");
       const start =
@@ -150,7 +227,8 @@ function parseSamSegmentations(response: unknown, prompt: string): Segmentation[
   }
 
   return out
-    .filter((s) => s.score >= 0.15 && s.bbox[2] > 0.01 && s.bbox[3] > 0.01)
+    // Colonies can be ~8–20 px on a 960 plate (~0.008–0.02 normalized)
+    .filter((s) => s.score >= 0.15 && s.bbox[2] > 0.004 && s.bbox[3] > 0.004)
     .sort((a, b) => b.score - a.score);
 }
 
