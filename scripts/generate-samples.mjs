@@ -199,6 +199,24 @@ const colonyLabel = `
   <text x="80" y="480" fill="#888" font-family="sans-serif" font-size="12">BenchMate demo fixture — colony plate label</text>
 </svg>`;
 
+/** Serial dilution notebook with intentional 10× pipetting error (1.0 mL vs needed 10.0 mL). */
+const dilutionNotebook = `
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="720">
+  <rect width="960" height="720" fill="#efeae0"/>
+  <rect x="40" y="30" width="880" height="660" fill="#fffef9" stroke="#cfc6b4"/>
+  ${Array.from({ length: 28 }, (_, i) => `<line x1="80" y1="${70 + i * 22}" x2="880" y2="${70 + i * 22}" stroke="#dde5f0" stroke-width="1"/>`).join("")}
+  <line x1="120" y1="50" x2="120" y2="670" stroke="#e8b0b0" stroke-width="1.5"/>
+  <text x="140" y="95" fill="#1e3a5f" font-family="Georgia, serif" font-size="26" font-style="italic">Serial Dilution — stock → working</text>
+  <text x="140" y="140" fill="#333" font-family="Comic Sans MS, cursive" font-size="20">Stock concentration (M1): 1.0 M CuSO4</text>
+  <text x="140" y="185" fill="#333" font-family="Comic Sans MS, cursive" font-size="20">Protocol target (M2): 0.10 M</text>
+  <text x="140" y="230" fill="#333" font-family="Comic Sans MS, cursive" font-size="20">Volumetric flask (V2): 100.0 mL</text>
+  <text x="140" y="290" fill="#1e3a5f" font-family="Comic Sans MS, cursive" font-size="22" font-weight="700">Aliquot transferred (V1 / pipette): 1.0 mL</text>
+  <text x="140" y="340" fill="#444" font-family="Comic Sans MS, cursive" font-size="18">QS to mark with DI water. Mix.</text>
+  <text x="140" y="400" fill="#444" font-family="Comic Sans MS, cursive" font-size="18">Observed final concentration (labeled): 0.01 M</text>
+  <text x="140" y="460" fill="#888" font-family="Comic Sans MS, cursive" font-size="16">Note: check M1·V1 = M2·V2 before plating.</text>
+  <text x="140" y="560" fill="#888" font-family="sans-serif" font-size="12">BenchMate demo fixture — serial dilution notebook (intentional 10× error)</text>
+</svg>`;
+
 await Promise.all([
   svgToPng("beers-law-spectrophotometer.png", beersSpec),
   svgToPng("beers-law-notebook.png", beersNotebook),
@@ -207,6 +225,7 @@ await Promise.all([
   svgToPng("balance-screen.png", balanceScreen),
   svgToPng("colony-plate.png", buildColonyPlateSvg()),
   svgToPng("colony-plate-label.png", colonyLabel),
+  svgToPng("dilution-notebook.png", dilutionNotebook),
 ]);
 
 // Also copy fixture JSON sidecars

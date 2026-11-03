@@ -61,8 +61,8 @@ export const SAMPLE_META: Record<
     description:
       "Wow demo: notebook shows 1.0 mL stock into 100 mL (should be 10.0 mL) — BenchMate catches the 10× error.",
     imageFiles: [
+      "/samples/dilution-notebook.png",
       "/samples/balance-screen.png",
-      "/samples/beers-law-notebook.png",
     ],
   },
 };

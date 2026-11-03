@@ -44,11 +44,12 @@ export interface SamQuantifierResult {
   notes: string[];
 }
 
-const COLONY_PROMPTS = [
-  "bacterial colony on agar plate",
-  "colony forming unit",
-  "petri dish colonies",
-];
+/**
+ * Meta SAM 3.1 matches short concrete noun phrases best.
+ * Synthetic / schematic colony plates respond to "dot" / "spot";
+ * longer biology phrases often return zero matches.
+ */
+const COLONY_PROMPTS = ["dot", "spot", "circle"];
 
 async function liveSegmentColonies(
   dataUrl: string,
@@ -64,8 +65,10 @@ async function liveSegmentColonies(
         const key = s.bbox.map((n) => n.toFixed(3)).join(",");
         if (seen.has(key)) continue;
         seen.add(key);
-        merged.push({ ...s, label: s.label || "colony" });
+        merged.push({ ...s, label: "colony" });
       }
+      // Frugal: stop after first prompt that yields a useful colony set
+      if (!prompt && merged.length >= 3) break;
     } catch (err) {
       console.warn(`SAM colony prompt "${p}" failed:`, err);
     }
@@ -77,16 +80,28 @@ async function liveSegmentFallback(
   dataUrl: string,
   kind: "gel" | "confluence",
 ): Promise<Segmentation[]> {
-  const prompt =
+  // Short noun phrases; longer biology wording often returns empty on SAM 3.1
+  const prompts =
     kind === "gel"
-      ? "protein band on western blot gel"
-      : "adherent cell monolayer region";
-  try {
-    return await segmentSam31Typed({ dataUrl, prompt });
-  } catch (err) {
-    console.warn(`SAM ${kind} fallback failed:`, err);
-    return [];
+      ? ["rectangle", "bar", "stripe"]
+      : ["cell", "region", "blob"];
+  const merged: Segmentation[] = [];
+  const seen = new Set<string>();
+  for (const prompt of prompts) {
+    try {
+      const segs = await segmentSam31Typed({ dataUrl, prompt });
+      for (const s of segs) {
+        const key = s.bbox.map((n) => n.toFixed(3)).join(",");
+        if (seen.has(key)) continue;
+        seen.add(key);
+        merged.push({ ...s, label: kind === "gel" ? "band" : s.label || prompt });
+      }
+      if (merged.length >= 3) break;
+    } catch (err) {
+      console.warn(`SAM ${kind} prompt "${prompt}" failed:`, err);
+    }
   }
+  return merged;
 }
 
 /**

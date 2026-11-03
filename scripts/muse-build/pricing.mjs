@@ -7,13 +7,29 @@ export const RATES = {
   "muse-spark-1.3": { input: 1.25, cachedInput: 0.15, output: 4.25 },
   "muse-spark-1.3-contributor": { input: 0.1, cachedInput: 0.002, output: 0.2 },
   "muse-spark-1.2": { input: 1.25, cachedInput: 0.15, output: 4.25 },
-  "sam-3.1": { input: 1.25, cachedInput: 0.15, output: 4.25 },
+  // SAM is billed per image / frame, not tokens — see estimateSamCost
+  "sam-3.1": { input: 0, cachedInput: 0, output: 0 },
   default: { input: 2.0, cachedInput: 0.2, output: 8.0 },
 };
 
+/** SAM 3.1: $2.50 / 1,000 images (Meta Model API pricing). */
+export const SAM_USD_PER_IMAGE = 2.5 / 1000;
+/** SAM 3.1 video: $0.20 / 1,000 frames (min 50 frames billed). */
+export const SAM_USD_PER_FRAME = 0.2 / 1000;
+
 export const SPEND_CAP_USD = Number(process.env.MUSE_BUILD_SPEND_CAP || 40);
 
+export function estimateSamCost(usage = {}) {
+  const images = usage.images_processed ?? usage.imagesProcessed ?? 0;
+  const frames = usage.video_frames_processed ?? usage.videoFramesProcessed ?? 0;
+  return images * SAM_USD_PER_IMAGE + frames * SAM_USD_PER_FRAME;
+}
+
 export function estimateCost(model, usage = {}) {
+  if (model === "sam-3.1" || usage.images_processed || usage.video_frames_processed) {
+    const sam = estimateSamCost(usage);
+    if (sam > 0 || model === "sam-3.1") return sam;
+  }
   const rate = RATES[model] || RATES.default;
   const prompt = usage.prompt_tokens ?? usage.input_tokens ?? 0;
   const cached =

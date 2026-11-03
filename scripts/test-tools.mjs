@@ -26,6 +26,7 @@ import { propagateUncertainty } from "../src/lib/tools/uncertainty";
 import { executeTool, computeCfu } from "../src/lib/tools";
 import { quantifyColonies } from "../src/lib/quant/colony-math";
 import { getDemoColonySegmentations, DEMO_COLONY_COUNT, DEMO_COLONY_EXPECTED_CFU } from "../src/lib/demo/colony-fixtures";
+import { parseSamSpecialTokenText } from "../src/lib/sam-client";
 
 const mg = convertUnit({ value: 2500, fromUnit: "mg", toUnit: "g" });
 assert.ok(Math.abs(mg.value - 2.5) < 1e-9);
@@ -70,7 +71,17 @@ assert.ok(Math.abs(quant.cfuPerMl - DEMO_COLONY_EXPECTED_CFU) < 1e-6);
 const viaCfu = executeTool("compute_cfu", { colonyCount: 42, platedVolumeMl: 0.1, dilutionFactor: 1e-4 });
 assert.ok(Math.abs((viaCfu as { cfuPerMl: number }).cfuPerMl - 4.2e6) < 1e-6);
 
-console.log("All chemistry tool tests passed (incl. CFU colony quant).");
+// Meta SAM 3.1 special-token grammar (pixel boxes → normalized)
+const samText =
+  "<0f>0<|box;x1=100;y1=200;x2=140;y2=240;w=1000;h=1000;c=0.91|><|mask;x=0;y=0;c=0.91;data=10,10,!abc|>,1<|box;x1=500;y1=500;x2=520;y2=530;w=1000;h=1000;c=0.8|><|mask;x=0;y=0;data=5,5,~xyz|>";
+const parsedSam = parseSamSpecialTokenText(samText, "dot");
+assert.equal(parsedSam.length, 2);
+assert.ok(Math.abs(parsedSam[0].bbox[0] - 0.1) < 1e-9);
+assert.ok(Math.abs(parsedSam[0].bbox[1] - 0.2) < 1e-9);
+assert.ok(Math.abs(parsedSam[0].bbox[2] - 0.04) < 1e-9);
+assert.ok(Math.abs(parsedSam[0].score - 0.91) < 1e-9);
+
+console.log("All chemistry tool tests passed (incl. CFU colony quant + SAM parse).");
 `,
 );
 

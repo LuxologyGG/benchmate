@@ -66,8 +66,15 @@ export interface ChatCompletionResult {
   raw: unknown;
 }
 
-/** Default completion budget — truncated JSON was the #1 live failure mode. */
+/**
+ * Default completion budget — truncated JSON was the #1 live failure mode.
+ * Muse Spark also burns many tokens as hidden `reasoning_tokens` before content;
+ * keep this high enough that short answers are not swallowed by reasoning.
+ */
 export const DEFAULT_MAX_COMPLETION_TOKENS = 8192;
+
+/** Floor for Spark/Wonder when callers pass a tight budget (reasoning headroom). */
+export const MIN_COMPLETION_TOKENS_FOR_REASONING = 1024;
 
 export function createOpenAIClient(prefer?: "meta" | "baseten" | "auto") {
   const resolved = resolveProvider(prefer);
@@ -157,6 +164,10 @@ export async function chatCompletion(
   const model = options.model || resolved.model;
   const maxAttempts = 3;
   let lastError: MetaClientError | null = null;
+  let tokenBudget = Math.max(
+    options.max_completion_tokens ?? DEFAULT_MAX_COMPLETION_TOKENS,
+    MIN_COMPLETION_TOKENS_FOR_REASONING,
+  );
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
@@ -166,8 +177,7 @@ export async function chatCompletion(
         tools: options.tools,
         tool_choice: options.tool_choice,
         response_format: options.response_format,
-        max_completion_tokens:
-          options.max_completion_tokens ?? DEFAULT_MAX_COMPLETION_TOKENS,
+        max_completion_tokens: tokenBudget,
       });
 
       const choice = response.choices?.[0];
@@ -198,8 +208,20 @@ export async function chatCompletion(
           },
         }));
 
+      const content = message.content ?? null;
+      // Spark often spends the whole budget on reasoning_tokens → empty content + finish=length
+      if (
+        (content == null || content.length === 0) &&
+        toolCalls.length === 0 &&
+        choice.finish_reason === "length" &&
+        attempt < maxAttempts
+      ) {
+        tokenBudget = Math.min(tokenBudget * 2, 16384);
+        continue;
+      }
+
       return {
-        content: message.content ?? null,
+        content,
         tool_calls: toolCalls,
         provider: resolved.provider,
         model,
