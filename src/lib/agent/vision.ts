@@ -4,7 +4,7 @@ import {
   inferSampleIdFromName,
 } from "@/lib/demo/fixtures";
 import { cropDataUrl } from "@/lib/image/crop";
-import { chatCompletion, extractJsonObject } from "@/lib/meta-client";
+import { chatCompletion, chatCompletionJson, extractJsonObject } from "@/lib/meta-client";
 import { runSamQuantifier } from "@/lib/quant/sam-quantifier";
 import { segmentWithSam31 } from "@/lib/sam-client";
 import type { ExtractionResult, LabSampleId } from "@/lib/types";
@@ -111,7 +111,9 @@ export async function extractFromImages(input: {
         : "Omit bounding boxes or keep empty array."
   }`;
 
-  let result = await chatCompletion({
+  const { data: parsed, result } = await chatCompletionJson<
+    Omit<ExtractionResult, "provider" | "model">
+  >({
     messages: [
       { role: "developer", content: developer },
       {
@@ -121,30 +123,9 @@ export async function extractFromImages(input: {
     ],
     response_format: { type: "json_object" },
     max_completion_tokens: 8192,
+    maxParseAttempts: 3,
+    repairHint: `Repair into ONE compact valid JSON lab extraction for sample ${sampleId}. Include experimentTitle, experimentType, summary, measurements[], boundingBoxes[], tables[]. No markdown.`,
   });
-
-  let parsed: Omit<ExtractionResult, "provider" | "model">;
-  try {
-    parsed = extractJsonObject(result.content ?? "{}");
-  } catch (err) {
-    result = await chatCompletion({
-      messages: [
-        {
-          role: "developer",
-          content:
-            "Repair into ONE compact valid JSON object for a lab extraction. No markdown. Include experimentTitle, experimentType, summary, measurements[], boundingBoxes[], tables[].",
-        },
-        {
-          role: "user",
-          content: `Fix this extraction JSON (may be truncated). Sample: ${sampleId}.\n\n${(result.content || "").slice(0, 6000)}`,
-        },
-      ],
-      response_format: { type: "json_object" },
-      max_completion_tokens: 4096,
-    });
-    parsed = extractJsonObject(result.content ?? "{}");
-    void err;
-  }
 
   const boundingBoxes =
     samBoxes.length > 0 ? samBoxes : (parsed.boundingBoxes ?? []);

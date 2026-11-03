@@ -7,9 +7,12 @@ import type {
   ExtractionResult,
   LabReport,
   LabSampleId,
+  ProtocolDeviation,
+  TraceEvent,
   VerificationResult,
 } from "@/lib/types";
 import { PipelineProgress, type PipelineStageId } from "@/components/benchmate/pipeline-progress";
+import { AgentTracePanel } from "@/components/benchmate/agent-trace-panel";
 import { BoundingBoxOverlay } from "@/components/benchmate/bounding-box-overlay";
 import { MeasurementTable } from "@/components/benchmate/measurement-table";
 import { CalibrationChart } from "@/components/benchmate/calibration-chart";
@@ -19,6 +22,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
+  AlertTriangle,
   Beaker,
   Download,
   FileText,
@@ -73,6 +77,9 @@ export function BenchMateApp() {
   const [verification, setVerification] = useState<VerificationResult | null>(null);
   const [report, setReport] = useState<LabReport | null>(null);
   const [showBoxes, setShowBoxes] = useState(true);
+  const [traceEvents, setTraceEvents] = useState<TraceEvent[]>([]);
+  const [deviations, setDeviations] = useState<ProtocolDeviation[]>([]);
+  const [orchestratorModel, setOrchestratorModel] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("/api/health")
@@ -107,6 +114,34 @@ export function BenchMateApp() {
     setImages(items);
   };
 
+  const mapTraceToPipeline = (ev: TraceEvent) => {
+    if (ev.role === "sam_quantifier" || ev.role === "spark_readout") {
+      setPipelineStage("extract");
+      if (ev.kind === "specialist_done" && ev.role === "spark_readout") {
+        setDoneThrough("extract");
+        setProgress(35);
+      }
+    } else if (ev.role === "calc_agent") {
+      setPipelineStage("compute");
+      if (ev.kind === "specialist_done") {
+        setDoneThrough("compute");
+        setProgress(55);
+      }
+    } else if (ev.role === "protocol_check" || ev.role === "verifier" || ev.role === "critic") {
+      setPipelineStage("verify");
+      if (ev.kind === "specialist_done" && ev.role === "verifier") {
+        setDoneThrough("verify");
+        setProgress(78);
+      }
+    } else if (ev.role === "report_writer" || ev.kind === "report") {
+      setPipelineStage("report");
+      setProgress(92);
+    } else if (ev.kind === "done") {
+      setDoneThrough("report");
+      setProgress(100);
+    }
+  };
+
   const runPipeline = async () => {
     if (!images.length) return;
     setError(null);
@@ -115,66 +150,114 @@ export function BenchMateApp() {
     setAgent(null);
     setVerification(null);
     setExtraction(null);
+    setTraceEvents([]);
+    setDeviations([]);
+    setOrchestratorModel(null);
+    setPipelineStage("extract");
+    setDoneThrough(null);
+    setProgress(8);
+    setStatusText("Muse Wonder orchestrating specialists…");
 
     try {
-      setPipelineStage("extract");
-      setDoneThrough(null);
-      setProgress(12);
       setStatusText(
         sampleId === "colony-plate"
-          ? "SAM 3.1 colony quantifier → deterministic CFU/mL…"
-          : "SAM-crop readouts → Muse Spark OCR → structured JSON…",
+          ? "Wonder → SAM colony quantifier → CFU/mL…"
+          : sampleId === "dilution-error"
+            ? "Wonder → protocol check for 10× dilution catch…"
+            : "Muse Wonder orchestrating specialists…",
       );
-      const extractRes = await fetch("/api/extract", {
+      const res = await fetch("/api/orchestrate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           images,
           sampleId,
-          enableSegmentation: true,
+          writeReport: true,
         }),
       });
-      const extractJson = await extractRes.json();
-      if (!extractRes.ok) throw new Error(extractJson.error ?? "Extract failed");
-      let currentExtraction = extractJson.extraction as ExtractionResult;
-      setExtraction(currentExtraction);
-      setDoneThrough("extract");
-      setProgress(35);
+      if (!res.ok || !res.body) {
+        const j = await res.json().catch(() => ({}));
+        throw new Error(j.error ?? `Orchestrate failed (${res.status})`);
+      }
 
-      setPipelineStage("compute");
-      setStatusText("Tool-using agent: unit conversion, regression, stoichiometry…");
-      const agentRes = await fetch("/api/agent", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ extraction: currentExtraction, sampleId }),
-      });
-      const agentJson = await agentRes.json();
-      if (!agentRes.ok) throw new Error(agentJson.error ?? "Agent failed");
-      const currentAgent = agentJson.agent as AgentResult;
-      setAgent(currentAgent);
-      setDoneThrough("compute");
-      setProgress(58);
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+      let gotResult = false;
 
-      setPipelineStage("verify");
-      setStatusText("Verifier pass: checking values vs images…");
-      const verifyRes = await fetch("/api/verify", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          extraction: currentExtraction,
-          images,
-          sampleId,
-        }),
-      });
-      const verifyJson = await verifyRes.json();
-      if (!verifyRes.ok) throw new Error(verifyJson.error ?? "Verify failed");
-      currentExtraction = verifyJson.extraction as ExtractionResult;
-      setExtraction(currentExtraction);
-      setVerification(verifyJson.verification as VerificationResult);
-      setDoneThrough("verify");
-      setProgress(78);
-      setStage("confirm");
-      setStatusText("Confirm flagged cells, then generate the report.");
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const chunks = buffer.split("\n\n");
+        buffer = chunks.pop() ?? "";
+
+        for (const chunk of chunks) {
+          const lines = chunk.split("\n");
+          let eventName = "message";
+          let dataLine = "";
+          for (const line of lines) {
+            if (line.startsWith("event:")) eventName = line.slice(6).trim();
+            if (line.startsWith("data:")) dataLine += line.slice(5).trim();
+          }
+          if (!dataLine) continue;
+          const data = JSON.parse(dataLine) as Record<string, unknown>;
+
+          if (eventName === "trace") {
+            const ev = data as unknown as TraceEvent;
+            setTraceEvents((prev) => [...prev, ev]);
+            mapTraceToPipeline(ev);
+            setStatusText(ev.title);
+            if (ev.kind === "protocol_deviation") {
+              const fromPayload = ev.payload as unknown as ProtocolDeviation | undefined;
+              setDeviations((prev) => [
+                ...prev,
+                fromPayload ?? {
+                  id: ev.id,
+                  code: "PROTOCOL",
+                  severity: "error" as const,
+                  message: ev.title,
+                  expected: {},
+                  observed: {},
+                },
+              ]);
+            }
+          } else if (eventName === "result") {
+            gotResult = true;
+            const extractionResult = data.extraction as ExtractionResult;
+            const agentResult = data.agent as AgentResult;
+            const verificationResult = data.verification as VerificationResult;
+            const reportResult = data.report as LabReport | undefined;
+            setExtraction(extractionResult);
+            setAgent(agentResult);
+            setVerification(verificationResult);
+            setDeviations((data.deviations as ProtocolDeviation[]) ?? []);
+            setOrchestratorModel((data.orchestratorModel as string) ?? "muse-wonder-1.0");
+            if (reportResult) {
+              setReport(reportResult);
+              setDoneThrough("report");
+              setProgress(100);
+              setStage("done");
+              setStatusText(
+                ((data.deviations as ProtocolDeviation[])?.length ?? 0) > 0
+                  ? "Protocol deviation caught — report ready."
+                  : "Report ready.",
+              );
+            } else {
+              setDoneThrough("verify");
+              setProgress(78);
+              setStage("confirm");
+              setStatusText("Confirm flagged cells, then generate the report.");
+            }
+          } else if (eventName === "error") {
+            throw new Error((data.error as string) ?? "Orchestration failed");
+          }
+        }
+      }
+
+      if (!gotResult) {
+        throw new Error("Orchestration stream ended without a result");
+      }
     } catch (err) {
       setStage("error");
       setError(err instanceof Error ? err.message : String(err));
@@ -269,6 +352,8 @@ export function BenchMateApp() {
               ? Beaker
               : id === "colony-plate"
                 ? CircleDot
+                : id === "dilution-error"
+                  ? AlertTriangle
                 : Scale,
       })),
     [],
@@ -341,7 +426,7 @@ export function BenchMateApp() {
                 SAM 3.1 colony counting + instrument OCR → a verified, formatted lab report.
               </h1>
               <p className="mt-3 max-w-lg text-sm text-teal-100/70">
-                Petri-dish CFU hero · SAM-crop before Spark · deterministic tools · verifier. Not a chatbot.
+                Muse Wonder orchestrates SAM colony counting + Spark readout, catches protocol deviations, and writes the record — live agent trace included.
               </p>
               <div className="mt-6 flex flex-wrap gap-3">
                 <Button
@@ -401,6 +486,34 @@ export function BenchMateApp() {
             {statusText}
           </div>
 
+          {(traceEvents.length > 0 || stage === "running") && (
+            <AgentTracePanel
+              events={traceEvents}
+              running={stage === "running"}
+              deviations={deviations}
+            />
+          )}
+
+          {deviations.length > 0 && (
+            <Alert
+              variant="destructive"
+              data-testid="dilution-wow-alert"
+              className="border-rose-600/40 bg-rose-50 text-rose-950"
+            >
+              <AlertTriangle className="size-4" />
+              <AlertTitle>
+                Wow moment — protocol deviation
+                {deviations[0].factor ? ` (${deviations[0].factor}×)` : ""}
+              </AlertTitle>
+              <AlertDescription className="space-y-1">
+                <p>{deviations[0].message}</p>
+                {deviations[0].suggestion && (
+                  <p className="text-sm opacity-90">{deviations[0].suggestion}</p>
+                )}
+              </AlertDescription>
+            </Alert>
+          )}
+
           {/* Upload / samples */}
           <Card className="border-teal-900/10 shadow-sm">
             <CardHeader>
@@ -409,11 +522,12 @@ export function BenchMateApp() {
                 1. Lab photos
               </CardTitle>
               <CardDescription>
-                Upload notebook / instrument photos, or load a built-in demo sample (colony CFU hero, Beer&apos;s law, titration, balance).
+                Upload photos or load a demo — try <strong>Petri Dish — Colony CFU Count</strong> or{" "}
+                <strong>Serial Dilution — 10× Protocol Catch</strong>.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
                 {sampleCards.map((s) => {
                   const Icon = s.icon;
                   return (
@@ -472,14 +586,19 @@ export function BenchMateApp() {
                 >
                   {stage === "running" && pipelineStage !== "report" ? (
                     <>
-                      <Loader2 className="size-4 animate-spin" /> Running agent…
+                      <Loader2 className="size-4 animate-spin" /> Wonder orchestrating…
                     </>
                   ) : (
                     <>
-                      <Sparkles className="size-4" /> Run BenchMate pipeline
+                      <Sparkles className="size-4" /> Run Wonder orchestration
                     </>
                   )}
                 </Button>
+                {orchestratorModel && (
+                  <Badge variant="outline" className="font-mono text-[10px]">
+                    orchestrator: {orchestratorModel}
+                  </Badge>
+                )}
               </div>
             </CardContent>
           </Card>

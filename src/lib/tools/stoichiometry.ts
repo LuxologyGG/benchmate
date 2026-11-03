@@ -83,8 +83,8 @@ export function molarity(input: {
 }
 
 export function dilution(input: {
-  m1: number;
-  v1: number;
+  m1?: number;
+  v1?: number;
   m2?: number;
   v2?: number;
   solveFor: "m2" | "v2" | "m1" | "v1";
@@ -92,10 +92,14 @@ export function dilution(input: {
   const { m1, v1, m2, v2, solveFor } = input;
   switch (solveFor) {
     case "m2":
-      if (v2 === undefined || v2 === 0) throw new Error("v2 required");
+      if (m1 === undefined || v1 === undefined || v2 === undefined || v2 === 0) {
+        throw new Error("m1, v1, v2 required");
+      }
       return { result: (m1 * v1) / v2, formula: "M2 = M1·V1 / V2" };
     case "v2":
-      if (m2 === undefined || m2 === 0) throw new Error("m2 required");
+      if (m1 === undefined || v1 === undefined || m2 === undefined || m2 === 0) {
+        throw new Error("m1, v1, m2 required");
+      }
       return { result: (m1 * v1) / m2, formula: "V2 = M1·V1 / M2" };
     case "m1":
       if (v1 === undefined || v1 === 0 || m2 === undefined || v2 === undefined) {

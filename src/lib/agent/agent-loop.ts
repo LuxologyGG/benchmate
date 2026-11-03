@@ -1,6 +1,6 @@
 import { isDemoMode } from "@/lib/config";
 import { getDemoAgent } from "@/lib/demo/fixtures";
-import { chatCompletion } from "@/lib/meta-client";
+import { chatCompletion, extractJsonObject } from "@/lib/meta-client";
 import { executeTool, TOOL_DEFINITIONS } from "@/lib/tools";
 import type {
   AgentResult,
@@ -10,6 +10,7 @@ import type {
   ExtractionResult,
   LabSampleId,
 } from "@/lib/types";
+import { getSparkModelId } from "@/lib/config";
 
 const MAX_TOOL_ROUNDS = 8;
 
@@ -55,7 +56,8 @@ export async function runCalculationAgent(input: {
       messages,
       tools: TOOL_DEFINITIONS,
       tool_choice: round === 0 ? "auto" : "auto",
-      max_completion_tokens: 4096,
+      model: getSparkModelId(),
+      max_completion_tokens: 8192,
     });
     provider = response.provider === "demo" ? "demo" : response.provider;
     model = response.model;
@@ -80,9 +82,15 @@ export async function runCalculationAgent(input: {
     for (const call of response.tool_calls) {
       let args: Record<string, unknown> = {};
       try {
-        args = JSON.parse(call.function.arguments || "{}");
+        args = extractJsonObject<Record<string, unknown>>(
+          call.function.arguments || "{}",
+        );
       } catch {
-        args = {};
+        try {
+          args = JSON.parse(call.function.arguments || "{}");
+        } catch {
+          args = {};
+        }
       }
       let output: Record<string, unknown>;
       try {
@@ -135,9 +143,9 @@ export async function runCalculationAgent(input: {
 
   if (finalContent) {
     try {
-      const parsed = JSON.parse(
-        finalContent.replace(/^```json\s*|\s*```$/g, "").trim(),
-      ) as Partial<AgentResult> & { summary?: string };
+      const parsed = extractJsonObject<Partial<AgentResult> & { summary?: string }>(
+        finalContent,
+      );
       return {
         plan: parsed.plan ?? "Tool-assisted calculation complete.",
         steps,
