@@ -49,10 +49,11 @@ function now() {
 function makeTrace(
   partial: Omit<TraceEvent, "id" | "timestamp"> & { id?: string },
 ): TraceEvent {
+  const { id: maybeId, ...rest } = partial;
   return {
-    id: partial.id ?? `tr-${Math.random().toString(36).slice(2, 9)}`,
+    ...rest,
+    id: maybeId ?? `tr-${Math.random().toString(36).slice(2, 10)}`,
     timestamp: now(),
-    ...partial,
   };
 }
 

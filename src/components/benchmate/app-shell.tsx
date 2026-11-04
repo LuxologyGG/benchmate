@@ -110,6 +110,18 @@ export function BenchMateApp() {
   const loadSample = useCallback(async (id: LabSampleId) => {
     setSampleId(id);
     setError(null);
+    setStage("upload");
+    setPipelineStage("upload");
+    setDoneThrough(null);
+    setProgress(0);
+    setStatusText("");
+    setExtraction(null);
+    setAgent(null);
+    setVerification(null);
+    setReport(null);
+    setTraceEvents([]);
+    setDeviations([]);
+    setOrchestratorModel(null);
     const meta = SAMPLE_META[id];
     const loaded = await Promise.all(
       meta.imageFiles.map((path) =>
@@ -259,7 +271,7 @@ export function BenchMateApp() {
               setStage("done");
               setStatusText(
                 ((data.deviations as ProtocolDeviation[])?.length ?? 0) > 0
-                  ? "Protocol deviation caught — report ready."
+                  ? "Protocol deviation caught. Report ready."
                   : "Report ready.",
               );
             } else {
@@ -455,11 +467,11 @@ export function BenchMateApp() {
 
             <div className="max-w-xl space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-700 delay-150">
               <h1 className="text-base leading-relaxed text-foreground/90 md:text-lg">
-                SAM 3.1 colony counting + instrument OCR → a verified, formatted lab report.
+                AI lab partner for wet-lab trainees: colony CFU, dilution catches, verified reports.
               </h1>
               <p className="text-sm text-muted-foreground">
-                Muse Wonder orchestrates SAM colony counting + Spark readout, catches protocol
-                deviations, and writes the record — live agent trace included.
+                Muse Wonder orchestrates SAM colony counting and Spark readout, catches protocol
+                deviations, and writes the record, with a live agent trace included.
               </p>
               <div className="pt-2">
                 <Button
@@ -549,7 +561,7 @@ export function BenchMateApp() {
             >
               <AlertTriangle className="size-4" />
               <AlertTitle>
-                Wow moment — protocol deviation
+                Wow moment: protocol deviation
                 {deviations[0].factor ? ` (${deviations[0].factor}×)` : ""}
               </AlertTitle>
               <AlertDescription className="space-y-1">
@@ -565,7 +577,7 @@ export function BenchMateApp() {
             <div className="border-b border-border/50 px-5 py-4">
               <FigletSectionTitle section="photos" />
               <p className="mt-2 text-xs text-muted-foreground">
-                Upload photos or load a demo — try Petri Dish — Colony CFU Count or Serial Dilution —
+                Upload photos or load a demo. Try Petri Dish - Colony CFU Count or Serial Dilution -
                 10× Protocol Catch.
               </p>
             </div>
@@ -828,7 +840,7 @@ export function BenchMateApp() {
       </main>
 
       <footer className="border-t border-border/40 py-6 text-center text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
-        BenchMate · MIT · Meta Global AI Developer Hackathon · Camron Farjami (U-M)
+        BenchMate · MIT · Meta Global AI Developer Hackathon · Camron Farjami · USC Norris / Loma Linda
       </footer>
     </div>
   );

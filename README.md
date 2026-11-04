@@ -2,20 +2,20 @@
 
 **AI lab partner that watches your bench, catches errors before they ruin an experiment, and writes the record.**
 
-Hackathon project for the **Meta Global AI Developer Hackathon** — *Build for Your World* / accelerating scientific experiments.  
+Hackathon project for the **Meta Global AI Developer Hackathon**, *Build for Your World* / accelerating scientific experiments.
 Built by **Camron Farjami**, grounded in wet-lab research at **USC Norris Comprehensive Cancer Center** (oncology) and **Loma Linda**, with related work at [Homa](https://homa.bio).
 
-BenchMate is for **wet-lab research trainees** — not a homework chatbot.
+BenchMate is for **wet-lab research trainees**, not a homework chatbot.
 
 **Hero demos (DEMO_MODE):**
-1. **Petri Dish — Colony CFU Count** — SAM 3.1 colony masks → deterministic `compute_cfu` → **4.2×10⁶ CFU/mL**
-2. **Serial Dilution — 10× Protocol Catch** — Muse Wonder live agent trace + protocol-deviation banner when a trainee pipettes **1.0 mL instead of 10.0 mL**
+1. **Petri Dish - Colony CFU Count** - SAM 3.1 colony masks → deterministic `compute_cfu` → **4.2×10⁶ CFU/mL**
+2. **Serial Dilution - 10× Protocol Catch** - Muse Wonder live agent trace + protocol-deviation banner when a trainee pipettes **1.0 mL instead of 10.0 mL**
 
 [![Demo mode](https://img.shields.io/badge/DEMO_MODE-works%20without%20API%20keys-0f766e)](#demo-mode)
 
 ## Problem
 
-At the bench, a wrong dilution, a miscounted plate, or a blank that was never zeroed can waste a day’s reagents — or poison downstream analysis. Trainees still retype instrument and notebook values by hand. Plain OCR dumps text without lab-aware checks. Chatbots invent numbers.
+At the bench, a wrong dilution, a miscounted plate, or a blank that was never zeroed can waste a day's reagents, or poison downstream analysis. Trainees still retype instrument and notebook values by hand. Plain OCR dumps text without lab-aware checks. Chatbots invent numbers.
 
 BenchMate closes that gap: **SAM 3.1** segments what is on the plate, **Muse Wonder** orchestrates specialists with a live agent trace, multimodal **Muse Spark** reads labels and readouts, **deterministic TypeScript tools** do the math, a protocol check catches 10× pipetting mistakes, and a structured report cites which tool produced each number.
 
@@ -58,18 +58,20 @@ DEMO_MODE=true npm run dev -- -p 43123
 
 Open [http://127.0.0.1:43123](http://127.0.0.1:43123).
 
-1. **Petri Dish — Colony CFU Count** → Run pipeline (SAM masks + CFU)  
-2. **Serial Dilution — 10× Protocol Catch** → Run pipeline (agent trace + deviation banner)
+1. **Petri Dish - Colony CFU Count** → Run pipeline (SAM masks + CFU)
+2. **Serial Dilution - 10× Protocol Catch** → Run pipeline (agent trace + deviation banner)
 
 ### Demo mode
 
-`DEMO_MODE=true` (or no API keys) replays fixtures end-to-end — including **42 SAM-style colony masks**, `compute_cfu` → **4.2×10⁶ CFU/mL**, and the **10× dilution protocol catch** with a live Wonder agent trace.
+`DEMO_MODE=true` (or no API keys) replays fixtures end-to-end, including **42 SAM-style colony masks**, `compute_cfu` → **4.2×10⁶ CFU/mL**, and the **10× dilution protocol catch** with a live Wonder agent trace.
 
 ```bash
 npm run demo:record:demo-mode
 ```
 
 ### Live Meta API mode
+
+Live mode calls real **SAM 3.1**, **Muse Wonder 1.0**, and **Muse Spark 1.3**. Expect spend and occasional latency; DEMO_MODE is the reliable judge path if keys or billing are unavailable.
 
 ```bash
 source scripts/load-meta-key.sh
@@ -111,7 +113,7 @@ Eval report: **[docs/eval/EVAL_REPORT.md](docs/eval/EVAL_REPORT.md)**.
 | Segmentation | `sam-3.1` | Colony / readout regions |
 | Final pass | Cursor | Build green, polish, demo, push |
 
-Spend cap ~$40 — see **[docs/BUILD_LOG.md](docs/BUILD_LOG.md)**.
+Spend cap ~$40. See **[docs/BUILD_LOG.md](docs/BUILD_LOG.md)**.
 
 ## License
 

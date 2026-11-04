@@ -30,7 +30,7 @@ export function MeasurementTable({
   const flagById = new Map((flags ?? []).map((f) => [f.measurementId, f]));
 
   return (
-    <div className="overflow-x-auto rounded-xl border border-border/70" data-testid="measurement-table">
+    <div className="overflow-x-auto border border-border/70" data-testid="measurement-table">
       <Table>
         <TableHeader>
           <TableRow>
