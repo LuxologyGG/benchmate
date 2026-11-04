@@ -6,6 +6,7 @@ import { AlertTriangle, CheckCircle2, Loader2 } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { AsciiBio } from "@/components/benchmate/ascii-bio";
 
 const ROLE_META: Record<AgentRole, { label: string; prefix: string }> = {
   orchestrator: { label: "wonder", prefix: "::" },
@@ -109,8 +110,22 @@ export function AgentTracePanel({
       <ScrollArea className="h-[min(420px,50vh)]">
         <ol className="space-y-0.5 p-3 font-mono text-[11px] leading-relaxed sm:text-xs" data-testid="agent-trace-list">
           {events.length === 0 && (
-            <li className="border border-dashed border-border/50 px-3 py-6 text-center text-xs text-muted-foreground">
-              Trace appears here as Wonder dispatches specialists…
+            <li
+              className="flex flex-col items-center gap-3 border border-dashed border-border/50 px-3 py-6 text-center"
+              data-testid="agent-trace-thinking"
+            >
+              <AsciiBio
+                context={running ? "think" : "idle"}
+                clip={running ? undefined : "phage"}
+                compact
+                showLabel
+                className="opacity-90"
+              />
+              <p className="text-xs text-muted-foreground">
+                {running
+                  ? "Wonder dispatching specialists…"
+                  : "Trace appears here as Wonder dispatches specialists…"}
+              </p>
             </li>
           )}
           {events.map((ev, i) => {
