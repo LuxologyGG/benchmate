@@ -6,9 +6,8 @@ import {
   ASCII_CLIPS,
   clipForContext,
   type AsciiClipId,
+  type AsciiContext,
 } from "@/lib/ascii/frames";
-
-type Context = "idle" | "extract" | "compute" | "verify" | "report" | "rotate";
 
 export function AsciiBio({
   clip,
@@ -18,7 +17,7 @@ export function AsciiBio({
   showLabel = true,
 }: {
   clip?: AsciiClipId;
-  context?: Context;
+  context?: AsciiContext;
   className?: string;
   compact?: boolean;
   showLabel?: boolean;
@@ -29,20 +28,29 @@ export function AsciiBio({
     clipForContext(context === "rotate" ? "rotate" : context, rotateTick);
   const data = ASCII_CLIPS[resolvedId];
   const [frame, setFrame] = useState(0);
+  const [fade, setFade] = useState(true);
+  const safeFrame = frame % data.frames.length;
 
   useEffect(() => {
     if (context !== "rotate") return;
-    const id = window.setInterval(() => setRotateTick((t) => t + 1), 3200);
+    const id = window.setInterval(() => setRotateTick((t) => t + 1), 2800);
     return () => window.clearInterval(id);
   }, [context]);
 
   useEffect(() => {
-    setFrame(0);
+    let fadeTimer = 0;
     const id = window.setInterval(() => {
-      setFrame((f) => (f + 1) % data.frames.length);
+      setFade(false);
+      fadeTimer = window.setTimeout(() => {
+        setFrame((f) => f + 1);
+        setFade(true);
+      }, 40);
     }, data.intervalMs);
-    return () => window.clearInterval(id);
-  }, [data]);
+    return () => {
+      window.clearInterval(id);
+      window.clearTimeout(fadeTimer);
+    };
+  }, [data.intervalMs, data.frames.length]);
 
   return (
     <div
@@ -53,6 +61,7 @@ export function AsciiBio({
       )}
       data-testid={`ascii-bio-${resolvedId}`}
       data-clip={resolvedId}
+      data-interval-ms={data.intervalMs}
       aria-hidden
     >
       {showLabel && (
@@ -60,21 +69,32 @@ export function AsciiBio({
           {data.label}
         </p>
       )}
-      <pre className="overflow-hidden whitespace-pre">{data.frames[frame]}</pre>
+      <pre
+        className={cn(
+          "min-h-[5.5em] overflow-hidden whitespace-pre transition-opacity duration-75",
+          fade ? "opacity-100" : "opacity-70",
+        )}
+      >
+        {data.frames[safeFrame]}
+      </pre>
     </div>
   );
 }
 
-/** Inline loader strip for agent-working states */
+/** Inline loader strip for agent-working / Wonder-thinking states */
 export function AsciiLoader({
   context,
   status,
   className,
+  thinking,
 }: {
-  context: Context;
+  context: AsciiContext;
   status?: string;
   className?: string;
+  /** Prefer phage clip for Wonder-dispatch thinking */
+  thinking?: boolean;
 }) {
+  const resolved: AsciiContext = thinking ? "think" : context;
   return (
     <div
       className={cn(
@@ -82,12 +102,13 @@ export function AsciiLoader({
         className,
       )}
       data-testid="ascii-loader"
+      data-context={resolved}
       role="status"
     >
-      <AsciiBio context={context} compact showLabel={false} />
+      <AsciiBio context={resolved} compact showLabel={false} />
       <div className="min-w-0 flex-1 pt-1">
         <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-accent">
-          agent working
+          {thinking || resolved === "think" ? "wonder thinking" : "agent working"}
         </p>
         {status && (
           <p className="mt-1 truncate font-mono text-xs text-muted-foreground">

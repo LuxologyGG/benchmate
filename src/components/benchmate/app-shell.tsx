@@ -386,20 +386,29 @@ export function BenchMateApp() {
     ).length ?? 0;
 
 
+  /** Phage clip only while Wonder is planning (no specialist traces yet). */
+  const wonderThinking =
+    stage === "running" &&
+    (traceEvents.length === 0 ||
+      (traceEvents.length <= 2 &&
+        traceEvents.every((e) => e.role === "orchestrator")));
+
   const loaderContext =
-    sampleId === "colony-plate"
-      ? "extract"
-      : sampleId === "dilution-error"
-        ? "verify"
-        : pipelineStage === "extract"
-          ? "extract"
-          : pipelineStage === "compute"
-            ? "compute"
-            : pipelineStage === "verify"
-              ? "verify"
-              : pipelineStage === "report"
-                ? "report"
-                : "rotate";
+    wonderThinking
+      ? "think"
+      : sampleId === "colony-plate"
+        ? "extract"
+        : sampleId === "dilution-error"
+          ? "verify"
+          : pipelineStage === "extract"
+            ? "extract"
+            : pipelineStage === "compute"
+              ? "compute"
+              : pipelineStage === "verify"
+                ? "verify"
+                : pipelineStage === "report"
+                  ? "report"
+                  : "rotate";
 
   return (
     <div className="relative min-h-screen overflow-x-hidden bg-background text-foreground">
@@ -484,7 +493,19 @@ export function BenchMateApp() {
           </div>
 
           {stage === "running" && (
-            <AsciiLoader context={loaderContext as "extract" | "compute" | "verify" | "report" | "rotate"} status={statusText} />
+            <AsciiLoader
+              context={
+                loaderContext as
+                  | "extract"
+                  | "compute"
+                  | "verify"
+                  | "report"
+                  | "think"
+                  | "rotate"
+              }
+              thinking={wonderThinking}
+              status={statusText}
+            />
           )}
 
           {error && (
