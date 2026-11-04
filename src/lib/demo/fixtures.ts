@@ -26,7 +26,7 @@ export const SAMPLE_META: Record<
   { title: string; description: string; imageFiles: string[] }
 > = {
   "beers-law": {
-    title: "Beer's Law Calibration — CuSO₄",
+    title: "Beer's Law Calibration - CuSO₄",
     description:
       "Spectrophotometer screen + handwritten calibration table for copper sulfate standards.",
     imageFiles: [
@@ -35,7 +35,7 @@ export const SAMPLE_META: Record<
     ],
   },
   titration: {
-    title: "Acid–Base Titration — HCl vs NaOH",
+    title: "Acid-Base Titration - HCl vs NaOH",
     description: "Burette readout and notebook titration trials with phenolphthalein endpoint.",
     imageFiles: [
       "/samples/titration-burette.png",
@@ -43,12 +43,12 @@ export const SAMPLE_META: Record<
     ],
   },
   balance: {
-    title: "Analytical Balance — Salt Masses",
+    title: "Analytical Balance - Salt Masses",
     description: "Digital balance screen with solid sample masses for molarity prep.",
     imageFiles: ["/samples/balance-screen.png"],
   },
   "colony-plate": {
-    title: "Petri Dish — Colony CFU Count",
+    title: "Petri Dish - Colony CFU Count",
     description:
       "SAM 3.1 segments colonies; deterministic code counts, areas, and CFU/mL (hero demo).",
     imageFiles: [
@@ -57,9 +57,9 @@ export const SAMPLE_META: Record<
     ],
   },
   "dilution-error": {
-    title: "Serial Dilution — 10× Protocol Catch",
+    title: "Serial Dilution - 10× Protocol Catch",
     description:
-      "Wow demo: notebook shows 1.0 mL stock into 100 mL (should be 10.0 mL) — BenchMate catches the 10× error.",
+      "Wow demo: notebook shows 1.0 mL stock into 100 mL (should be 10.0 mL). BenchMate catches the 10× error.",
     imageFiles: [
       "/samples/dilution-notebook.png",
       "/samples/balance-screen.png",

@@ -111,6 +111,7 @@ export function AgentTracePanel({
         <ol className="space-y-0.5 p-3 font-mono text-[11px] leading-relaxed sm:text-xs" data-testid="agent-trace-list">
           {events.length === 0 && (
             <li
+              key="trace-empty"
               className="flex flex-col items-center gap-3 border border-dashed border-border/50 px-3 py-6 text-center"
               data-testid="agent-trace-thinking"
             >
@@ -132,7 +133,7 @@ export function AgentTracePanel({
             const meta = ROLE_META[ev.role] ?? ROLE_META.orchestrator;
             return (
               <li
-                key={ev.id}
+                key={`${ev.id}-${i}`}
                 className={cn(
                   "flex gap-2 animate-in fade-in slide-in-from-left-1 duration-300",
                   kindClass(ev.kind),
@@ -162,7 +163,7 @@ export function AgentTracePanel({
             );
           })}
           {running && (
-            <li className="flex items-center gap-2 text-accent">
+            <li key="trace-cursor" className="flex items-center gap-2 text-accent">
               <span className="opacity-50">&gt;</span>
               <span className="animate-pulse">▌</span>
             </li>

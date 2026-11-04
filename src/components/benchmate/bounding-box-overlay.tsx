@@ -12,7 +12,7 @@ export function BoundingBoxOverlay({
   alt: string;
 }) {
   return (
-    <div className="relative overflow-hidden rounded-xl border border-border/60 bg-black/5" data-testid="bbox-overlay">
+    <div className="relative overflow-hidden border border-border/60 bg-black/5" data-testid="bbox-overlay">
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src={src} alt={alt} className="block h-auto w-full object-contain" />
       {boxes.map((box) => (
