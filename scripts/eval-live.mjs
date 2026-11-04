@@ -304,11 +304,19 @@ async function main() {
     `fixtures/colony-eval/images/${gel.file}`,
     "gel-densitometry",
   );
+  // Frugal gel path: 1 SAM image when intensity ≥12; else full+lane tiles
+  const gelSamImages = Array.isArray(gelLive.notes)
+    && gelLive.notes.some((n) => /frugal 1-call/i.test(n))
+    ? 1
+    : Array.isArray(gelLive.notes)
+      && gelLive.notes.some((n) => /Lane tiling/i.test(n))
+      ? 6
+      : 2;
   spend.record({
     model: "sam-3.1",
-    usage: { images_processed: 2 },
+    usage: { images_processed: gelSamImages },
     role: "gel_001",
-    note: "up to 2 gel prompts before early-stop",
+    note: "SAM ∪ intensity-profile merge (lane tiles only if intensity weak)",
   });
   const gelPred =
     gelLive.primary?.bandCount ?? gelLive.primary?.colonyCount ?? 0;
@@ -317,6 +325,7 @@ async function main() {
     pred: gelPred,
     mode: gelLive.primary?.mode,
     usedSam: gelLive.usedSam,
+    notes: gelLive.notes,
   });
 
   let orchColony = null;
@@ -474,8 +483,10 @@ async function main() {
         livePredicted: gelPred,
         absError: Math.abs(gelPred - gel.groundTruthCount),
         within10pct: pctErr(gelPred, gel.groundTruthCount) <= 0.1,
+        exact: gelPred === gel.groundTruthCount,
         usedSam: gelLive.usedSam,
         mode: gelLive.primary?.mode,
+        notes: gelLive.notes,
       },
       dilution: {
         liveCaught:

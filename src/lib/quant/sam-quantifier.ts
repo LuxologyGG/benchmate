@@ -10,6 +10,7 @@ import {
   getDemoColonyParams,
   getDemoFallbackSegmentations,
 } from "@/lib/demo/colony-fixtures";
+import { cropDataUrl } from "@/lib/image/crop";
 import {
   quantifyColonies,
   quantifyConfluence,
@@ -18,6 +19,12 @@ import {
   type QuantFallbackResult,
   type CfuParams,
 } from "@/lib/quant/colony-math";
+import {
+  detectGelBandsIntensity,
+  estimateGelLanes,
+  mergeBandSegmentations,
+  remapCropBBox,
+} from "@/lib/quant/gel-intensity";
 import {
   segmentSam31Typed,
   type Segmentation,
@@ -51,6 +58,9 @@ export interface SamQuantifierResult {
  */
 const COLONY_PROMPTS = ["dot", "spot", "circle"];
 
+/** Short nouns for gel bands — biology phrases ("DNA band") return empty. */
+const GEL_PROMPTS = ["bar", "stripe"];
+
 async function liveSegmentColonies(
   dataUrl: string,
   prompt?: string,
@@ -82,11 +92,11 @@ async function liveSegmentFallback(
 ): Promise<Segmentation[]> {
   // Short noun phrases; longer biology wording often returns empty on SAM 3.1
   const prompts =
-    kind === "gel"
-      ? ["rectangle", "bar", "stripe"]
-      : ["cell", "region", "blob"];
+    kind === "gel" ? GEL_PROMPTS : ["cell", "region", "blob"];
   const merged: Segmentation[] = [];
   const seen = new Set<string>();
+  // Gels: stop once we have a useful SAM set; intensity CV fills the rest.
+  const earlyStop = kind === "gel" ? 8 : 3;
   for (const prompt of prompts) {
     try {
       const segs = await segmentSam31Typed({ dataUrl, prompt });
@@ -94,13 +104,91 @@ async function liveSegmentFallback(
         const key = s.bbox.map((n) => n.toFixed(3)).join(",");
         if (seen.has(key)) continue;
         seen.add(key);
-        merged.push({ ...s, label: kind === "gel" ? "band" : s.label || prompt });
+        merged.push({
+          ...s,
+          label: kind === "gel" ? "band" : s.label || prompt,
+        });
       }
-      if (merged.length >= 3) break;
+      if (merged.length >= earlyStop) break;
     } catch (err) {
       console.warn(`SAM ${kind} prompt "${prompt}" failed:`, err);
     }
   }
+  return merged;
+}
+
+/**
+ * Live gel path: intensity CV + SAM merge. Lane crop→SAM only when intensity
+ * is weak (harder/real gels). Always hits SAM at least once so usedSam stays honest.
+ */
+async function liveSegmentGel(
+  dataUrl: string,
+  notes: string[],
+): Promise<Segmentation[]> {
+  const intensitySegs = await detectGelBandsIntensity(dataUrl);
+  notes.push(`Intensity profile proposals: ${intensitySegs.length} band(s).`);
+
+  let samFull: Segmentation[] = [];
+  let samLane: Segmentation[] = [];
+
+  if (intensitySegs.length >= 12) {
+    // Strong intensity signal (typical synthetic ladders): one SAM call for live honesty
+    try {
+      const segs = await segmentSam31Typed({ dataUrl, prompt: "bar" });
+      samFull = segs.map((s) => ({ ...s, label: "band" }));
+    } catch (err) {
+      console.warn("SAM gel prompt failed:", err);
+    }
+    notes.push(
+      `Full-frame SAM proposals: ${samFull.length} band(s) (frugal 1-call; intensity strong).`,
+    );
+  } else {
+    // Weak intensity — lean on SAM full-frame + lane tiles
+    samFull = await liveSegmentFallback(dataUrl, "gel");
+    notes.push(`Full-frame SAM proposals: ${samFull.length} band(s).`);
+    if (samFull.length < 8) {
+      const lanes = await estimateGelLanes(dataUrl);
+      notes.push(`Lane tiling: ${lanes.length} lane crop(s) for SAM.`);
+      for (const lane of lanes.slice(0, 6)) {
+        try {
+          const cropped = await cropDataUrl(dataUrl, lane, { pad: 0.01 });
+          const segs = await segmentSam31Typed({
+            dataUrl: cropped.dataUrl,
+            prompt: "bar",
+          });
+          for (const [i, s] of segs.entries()) {
+            samLane.push({
+              ...s,
+              id: `sam-lane${lane.laneIndex}-${s.id || i}`,
+              label: "band",
+              bbox: remapCropBBox(s.bbox, lane),
+            });
+          }
+        } catch (err) {
+          console.warn(`SAM lane ${lane.laneIndex} failed:`, err);
+        }
+      }
+      notes.push(`Lane-SAM proposals: ${samLane.length} band(s).`);
+    }
+  }
+
+  // Prefer intensity boxes (score bump). Drop tall SAM blobs (lanes/gel body).
+  const intensityPreferred = intensitySegs.map((s) => ({
+    ...s,
+    score: Math.min(0.99, s.score + 0.05),
+  }));
+  const thinSam = (s: Segmentation) => {
+    const [, , w, h] = s.bbox;
+    return h < 0.12 && w > 0.03 && w / Math.max(h, 1e-6) >= 1.4;
+  };
+  const merged = mergeBandSegmentations([
+    intensityPreferred,
+    samFull.filter(thinSam),
+    samLane.filter(thinSam),
+  ]);
+  notes.push(
+    `Merged gel bands (SAM ∪ intensity): ${merged.length} after NMS.`,
+  );
   return merged;
 }
 
@@ -161,15 +249,16 @@ export async function runSamQuantifier(
   // Live path — SAM 3.1 required
   usedSam = true;
   if (mode === "gel-densitometry") {
-    segmentations = await liveSegmentFallback(input.dataUrl, "gel");
+    segmentations = await liveSegmentGel(input.dataUrl, notes);
     const primary = quantifyGelBands(segmentations);
+    notes.push("SAM 3.1 gel densitometry + intensity merge.");
     return {
       success: primary.bandCount > 0,
       usedSam,
       demoMode: false,
       primary,
       segmentations,
-      notes: ["SAM 3.1 gel/Western densitometry path."],
+      notes,
     };
   }
   if (mode === "confluence") {
@@ -194,7 +283,7 @@ export async function runSamQuantifier(
 
   if (primary.mode === "colony" && primary.colonyCount === 0) {
     notes.push("Colony path returned 0 colonies — trying gel densitometry fallback.");
-    const gelSegs = await liveSegmentFallback(input.dataUrl, "gel");
+    const gelSegs = await liveSegmentGel(input.dataUrl, notes);
     const gel = quantifyGelBands(gelSegs.length ? gelSegs : segmentations);
     fallbacks.push(gel);
     if (gel.bandCount > 0) {

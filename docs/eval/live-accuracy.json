@@ -1,12 +1,12 @@
 {
-  "generatedAt": "2026-11-03T23:17:27.869Z",
-  "mode": "LIVE Meta API — muse-wonder-1.0 / muse-spark-1.3 / sam-3.1",
-  "apiSpendUsdEstimate": 0.2544,
+  "generatedAt": "2026-11-04T02:14:55.330Z",
+  "mode": "LIVE Meta API \u2014 muse-wonder-1.0 / muse-spark-1.3 / sam-3.1",
+  "apiSpendUsdEstimate": 0.2094,
   "spendCapUsd": 35,
   "spendSummary": {
     "capUsd": 35,
-    "totalUsd": 0.2544,
-    "remainingUsd": 34.7456,
+    "totalUsd": 0.2094,
+    "remainingUsd": 34.7906,
     "calls": 11,
     "haltedReason": null
   },
@@ -28,7 +28,7 @@
         "exact": true,
         "within10pct": true,
         "notes": [
-          "SAM 3.1 segmented 42 colonies → 4.20e+6 CFU/mL."
+          "SAM 3.1 segmented 42 colonies \u2192 4.20e+6 CFU/mL."
         ]
       }
     },
@@ -41,11 +41,18 @@
     },
     "gel_001": {
       "groundTruthCount": 15,
-      "livePredicted": 7,
-      "absError": 8,
-      "within10pct": false,
+      "livePredicted": 15,
+      "absError": 0,
+      "within10pct": true,
       "usedSam": true,
-      "mode": "gel-densitometry"
+      "mode": "gel-densitometry",
+      "exact": true,
+      "notes": [
+        "Intensity profile proposals: 15 band(s).",
+        "Full-frame SAM proposals: 4 band(s) (frugal 1-call; intensity strong).",
+        "Merged gel bands (SAM \u222a intensity): 15 after NMS.",
+        "SAM 3.1 gel densitometry + intensity merge."
+      ]
     },
     "dilution": {
       "liveCaught": true,
