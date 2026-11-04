@@ -227,8 +227,8 @@ export function parseSamSegmentations(
   }
 
   return out
-    // Colonies can be ~8–20 px on a 960 plate (~0.008–0.02 normalized)
-    .filter((s) => s.score >= 0.15 && s.bbox[2] > 0.004 && s.bbox[3] > 0.004)
+    // Colonies ~8–20 px on a 960 plate; gel bands can be ~3–6 px tall (~0.005)
+    .filter((s) => s.score >= 0.15 && s.bbox[2] > 0.003 && s.bbox[3] > 0.002)
     .sort((a, b) => b.score - a.score);
 }
 

@@ -123,14 +123,18 @@ export function quantifyColonies(
   };
 }
 
-/** Western / gel band densitometry fallback from SAM band boxes. */
+/** Western / gel band densitometry from SAM / intensity band boxes. */
 export function quantifyGelBands(segs: Segmentation[]): BandDensitometryResult {
+  // Synthetic ladder bands are often only ~3–6 px tall (h ≈ 0.005–0.01).
+  // Accept short-noun SAM labels (bar/stripe/rectangle) and thin horizontals.
   const bandLike = segs.filter((s) => {
     const [, , w, h] = s.bbox;
-    return (
-      /band|gel|western|lane|blot/i.test(s.label) ||
-      (w > 0.05 && h > 0.01 && h < 0.25 && s.score >= 0.2)
-    );
+    if (
+      /band|gel|western|lane|blot|bar|stripe|rect|line/i.test(s.label)
+    ) {
+      return w > 0.02 && h > 0.002 && h < 0.35 && s.score >= 0.15;
+    }
+    return w > 0.04 && h > 0.003 && h < 0.3 && w / Math.max(h, 1e-6) >= 1.5 && s.score >= 0.2;
   });
   const bands = (bandLike.length ? bandLike : segs).map((s, i) => {
     const areaNorm = Math.max(0, s.bbox[2] * s.bbox[3]);
