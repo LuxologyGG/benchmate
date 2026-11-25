@@ -1,5 +1,5 @@
-import { BenchMateApp } from "@/components/benchmate/app-shell";
+import { CourseLab } from "@/components/courselab/course-lab";
 
 export default function Home() {
-  return <BenchMateApp />;
+  return <CourseLab />;
 }

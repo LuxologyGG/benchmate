@@ -23,7 +23,8 @@
     "muse:build": "node scripts/muse-build/orchestrate.mjs",
     "muse:continue": "node scripts/muse-build/continue.mjs",
     "muse:models": "node -e \"import('./scripts/muse-build/client.mjs').then(async m=>{console.log((await m.listModels()).join('\\n'))})\"",
-    "test:courselab": "tsx scripts/test-courselab.ts"
+    "test:courselab": "tsx scripts/test-courselab.ts",
+    "courselab:record": "tsx scripts/record-courselab-fixtures.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.9.0",

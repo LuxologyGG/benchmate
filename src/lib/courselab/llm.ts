@@ -12,7 +12,7 @@ export const PROVIDERS: Record<Provider, { baseUrl: string; defaultModel: string
   groq: { baseUrl: "https://api.groq.com/openai/v1", defaultModel: "openai/gpt-oss-20b", priceIn: 0.075, priceOut: 0.3 },
   gemini: {
     baseUrl: "https://generativelanguage.googleapis.com/v1beta/openai",
-    defaultModel: "gemini-2.5-flash-lite",
+    defaultModel: "gemini-3.5-flash-lite",
     priceIn: 0.1,
     priceOut: 0.4,
   },

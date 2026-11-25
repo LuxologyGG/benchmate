@@ -9,9 +9,9 @@ const mono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "BenchMate - Lab photos to verified reports",
+  title: "BenchMate Course Lab: catch the 10× mistake before it ruins the run",
   description:
-    "AI lab partner for wet-lab trainees: colony CFU, dilution catches, and verified reports. Meta Global AI Developer Hackathon.",
+    "A student lab partner: compares your lab manual to your notebook, catches 10× pipetting errors with deterministic tools, and writes a tool-cited record.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
