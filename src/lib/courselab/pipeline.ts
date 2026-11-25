@@ -61,7 +61,7 @@ export function coerceExtraction(x: unknown): Extraction {
     text: String(s.text ?? ""),
     quantities: (Array.isArray(s.quantities) ? s.quantities : [])
       .map((q: Record<string, unknown>) => ({
-        name: String(q.name ?? ""),
+        name: String(q.name ?? "").replace(/_/g, " "),
         value: num(q.value),
         unit: String(q.unit ?? ""),
         role: role(q.role),
@@ -72,7 +72,7 @@ export function coerceExtraction(x: unknown): Extraction {
   const actuals: ActualEntry[] = (Array.isArray(o.actuals) ? o.actuals : [])
     .map((a: Record<string, unknown>) => ({
       stepN: a.stepN === undefined || a.stepN === null ? undefined : num(a.stepN),
-      name: String(a.name ?? ""),
+      name: String(a.name ?? "").replace(/_/g, " "),
       value: num(a.value),
       unit: String(a.unit ?? ""),
       role: role(a.role),
@@ -88,12 +88,19 @@ export function coerceExtraction(x: unknown): Extraction {
 }
 
 /** Provenance gate: a model-extracted number is only used if it literally appears in its source text. */
+function grounded(value: number, quote: string | undefined, source: string): boolean {
+  if (!valueAppearsIn(value, source)) return false;
+  // If the model's quote really is in the source, the number must be written (as digits) inside that quote.
+  if (quote && source.toLowerCase().includes(quote.toLowerCase().trim())) return valueAppearsIn(value, quote);
+  return true;
+}
+
 export function verifyProvenance(ex: Extraction, manual: string, notebook: string): { ex: Extraction; rejected: Deviation[] } {
   const rejected: Deviation[] = [];
   const steps = ex.steps.map((s) => ({
     ...s,
     quantities: s.quantities.filter((q) => {
-      const ok = valueAppearsIn(q.value, manual) && dimensionOf(q.unit) !== "unknown";
+      const ok = grounded(q.value, q.quote, manual) && dimensionOf(q.unit) !== "unknown";
       if (!ok)
         rejected.push({
           id: `unverified-m-${s.n}-${q.name}`,
@@ -108,7 +115,7 @@ export function verifyProvenance(ex: Extraction, manual: string, notebook: strin
     }),
   }));
   const actuals = ex.actuals.filter((a) => {
-    const ok = valueAppearsIn(a.value, notebook) && dimensionOf(a.unit) !== "unknown";
+    const ok = grounded(a.value, a.quote, notebook) && dimensionOf(a.unit) !== "unknown";
     if (!ok)
       rejected.push({
         id: `unverified-n-${a.stepN}-${a.name}`,
@@ -317,7 +324,10 @@ export async function runCourseLab(input: CourseLabInput, opts: RunOptions = {})
 
   const order = { error: 0, warning: 1, info: 2 } as const;
   const allDev = [...deviations, ...dil, ...notesDev, ...unmatchedDev, ...rejected].sort(
-    (a, b) => order[a.severity] - order[b.severity] || (a.stepN ?? 99) - (b.stepN ?? 99),
+    (a, b) =>
+      order[a.severity] - order[b.severity] ||
+      (a.stepN ?? 99) - (b.stepN ?? 99) ||
+      Number(/size/.test(a.title)) - Number(/size/.test(b.title)), // working values before equipment sizes
   );
   log("check", "done", `${allDev.filter((d) => d.severity === "error").length} error(s), ${allDev.filter((d) => d.severity === "warning").length} warning(s)`);
 
