@@ -4,12 +4,14 @@
  * Usage: npm run build:static
  */
 import { execSync } from "node:child_process";
-import { existsSync, renameSync, writeFileSync } from "node:fs";
+import { existsSync, renameSync, rmSync, writeFileSync } from "node:fs";
 
 const aside = [
   ["src/app/api", ".static-aside-api"],
   ["src/app/classic", ".static-aside-classic"],
 ];
+// Stale generated route types (from dev/server builds) reference the moved-aside routes; start clean.
+rmSync(".next", { recursive: true, force: true });
 for (const [from, to] of aside) if (existsSync(from)) renameSync(from, to);
 try {
   execSync("npx next build", { stdio: "inherit", env: { ...process.env, STATIC_EXPORT: "1" } });

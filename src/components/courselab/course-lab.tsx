@@ -17,8 +17,13 @@ import { fmt } from "@/lib/courselab/units";
 
 const STATIC = process.env.NEXT_PUBLIC_STATIC_EXPORT === "1";
 const KEY_STORE = "benchmate.courselab.groqKey";
+const KEY_STORE_G = "benchmate.courselab.geminiKey";
 
 type Status = { live: boolean; vision: boolean; textModel: string | null; visionModel: string | null };
+
+function staticStatus(groq: string, gemini: string): Status {
+  return { live: Boolean(groq), vision: Boolean(gemini), textModel: groq ? PROVIDERS.groq.defaultModel : null, visionModel: gemini ? PROVIDERS.gemini.defaultModel : null };
+}
 
 function sevColor(s: Deviation["severity"]) {
   return s === "error" ? "text-destructive border-destructive/50" : s === "warning" ? "text-amber-300 border-amber-300/40" : "text-muted-foreground border-border";
@@ -32,6 +37,7 @@ export function CourseLab() {
   const [tolerance, setTolerance] = useState(10);
   const [status, setStatus] = useState<Status | null>(null);
   const [byoKey, setByoKey] = useState("");
+  const [byoGemini, setByoGemini] = useState("");
   const [running, setRunning] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<CourseLabResult | null>(null);
@@ -42,9 +48,13 @@ export function CourseLab() {
 
   useEffect(() => {
     if (STATIC) {
-      const k = typeof window !== "undefined" ? sessionStorage.getItem(KEY_STORE) ?? "" : "";
+      const k = sessionStorage.getItem(KEY_STORE) ?? "";
+      const g = sessionStorage.getItem(KEY_STORE_G) ?? "";
+      // Reading sessionStorage must happen after hydration (static export prerenders without window).
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setByoKey(k);
-      setStatus({ live: Boolean(k), vision: false, textModel: k ? PROVIDERS.groq.defaultModel : null, visionModel: null });
+      setByoGemini(g);
+      setStatus(staticStatus(k, g));
       return;
     }
     fetch("/api/courselab")
@@ -76,7 +86,14 @@ export function CourseLab() {
       if (STATIC) {
         r = await runCourseLab(
           { manual, notebook, notebookImage: image, tolerancePct: tolerance },
-          byoKey ? { llm: { text: { provider: "groq", apiKey: byoKey } } } : { fixture: unchanged ? getFixture(sample.id) : undefined },
+          byoKey || byoGemini
+            ? {
+                llm: {
+                  text: byoKey ? { provider: "groq", apiKey: byoKey } : undefined,
+                  vision: byoGemini ? { provider: "gemini", apiKey: byoGemini } : undefined,
+                },
+              }
+            : { fixture: unchanged ? getFixture(sample.id) : undefined },
         );
       } else {
         const res = await fetch("/api/courselab", {
@@ -95,7 +112,7 @@ export function CourseLab() {
     } finally {
       setRunning(false);
     }
-  }, [manual, notebook, image, tolerance, byoKey, unchanged, sample.id]);
+  }, [manual, notebook, image, tolerance, byoKey, byoGemini, unchanged, sample.id]);
 
   const errors = result?.deviations.filter((d) => d.severity === "error") ?? [];
   const warnings = result?.deviations.filter((d) => d.severity === "warning") ?? [];
@@ -190,21 +207,46 @@ export function CourseLab() {
 
       {STATIC && (
         <section className="mb-4 rounded-lg border p-3 text-sm" aria-label="Bring your own key">
-          <Label htmlFor="byo">Run live with your own free Groq key (optional)</Label>
-          <div className="mt-2 flex flex-col gap-2 md:flex-row">
-            <Input
-              id="byo"
-              type="password"
-              autoComplete="off"
-              placeholder="gsk_… (kept in this tab only; sent only to api.groq.com)"
-              value={byoKey}
-              onChange={(e) => {
-                setByoKey(e.target.value);
-                sessionStorage.setItem(KEY_STORE, e.target.value);
-                setStatus({ live: Boolean(e.target.value), vision: false, textModel: e.target.value ? PROVIDERS.groq.defaultModel : null, visionModel: null });
-              }}
-            />
+          <p className="font-medium">Run live with your own free keys (optional)</p>
+          <div className="mt-2 grid gap-2 md:grid-cols-2">
+            <div>
+              <Label htmlFor="byo" className="text-xs">
+                Groq API key (extraction)
+              </Label>
+              <Input
+                id="byo"
+                type="password"
+                autoComplete="off"
+                className="mt-1"
+                placeholder="gsk_…"
+                value={byoKey}
+                onChange={(e) => {
+                  setByoKey(e.target.value);
+                  sessionStorage.setItem(KEY_STORE, e.target.value);
+                  setStatus(staticStatus(e.target.value, byoGemini));
+                }}
+              />
+            </div>
+            <div>
+              <Label htmlFor="byo-g" className="text-xs">
+                Gemini API key (optional, notebook photos)
+              </Label>
+              <Input
+                id="byo-g"
+                type="password"
+                autoComplete="off"
+                className="mt-1"
+                placeholder="AIza…"
+                value={byoGemini}
+                onChange={(e) => {
+                  setByoGemini(e.target.value);
+                  sessionStorage.setItem(KEY_STORE_G, e.target.value);
+                  setStatus(staticStatus(byoKey, e.target.value));
+                }}
+              />
+            </div>
           </div>
+          <p className="mt-1 text-xs text-muted-foreground">Keys stay in this browser tab (sessionStorage) and are sent only to api.groq.com / generativelanguage.googleapis.com.</p>
           <p className="mt-1 text-xs text-muted-foreground">Without a key, the built-in examples replay model output recorded from a live run ({FIXTURES_RECORDED_AT.slice(0, 10)}); edited text uses the deterministic parser.</p>
         </section>
       )}

@@ -1,5 +1,5 @@
 {
-  "ranAt": "2026-11-25T23:54:03.453Z",
+  "ranAt": "2026-11-26T00:02:47.208Z",
   "results": [
     {
       "id": "01-ordinary-nacl",
@@ -9,10 +9,10 @@
       "pass": true,
       "errors": 0,
       "warnings": 0,
-      "topFinding": "no deviations",
-      "tokens": 1243,
-      "modelMs": 828,
-      "wallMs": 905,
+      "topFinding": "Dropped a model value not found in the manual",
+      "tokens": 1345,
+      "modelMs": 1374,
+      "wallMs": 1452,
       "models": "groq:openai/gpt-oss-20b",
       "repeatNote": "",
       "screenshot": "01-ordinary-nacl.png",
@@ -21,10 +21,10 @@
         "steps": [
           {
             "n": 1,
-            "text": "Rinse a 100.0 mL volumetric flask three times with deionized water",
+            "text": "Rinse a 100.0 mL volumetric flask three times with deionized water.",
             "quantities": [
               {
-                "name": "flask volume",
+                "name": "volume",
                 "value": 100,
                 "unit": "mL",
                 "role": "volume",
@@ -34,7 +34,7 @@
           },
           {
             "n": 2,
-            "text": "Using a 10 mL volumetric pipette, transfer 10.0 mL of the 1.0 M NaCl stock solution into the flask",
+            "text": "Using a 10 mL volumetric pipette, transfer 10.0 mL of the 1.0 M NaCl stock solution into the flask.",
             "quantities": [
               {
                 "name": "transfer volume",
@@ -61,7 +61,7 @@
           },
           {
             "n": 3,
-            "text": "Dilute to the mark (100.0 mL total) with deionized water to make 0.10 M NaCl",
+            "text": "Dilute to the mark (100.0 mL total) with deionized water to make 0.10 M NaCl.",
             "quantities": [
               {
                 "name": "final volume",
@@ -81,7 +81,7 @@
           },
           {
             "n": 4,
-            "text": "Stopper and invert the flask ten times to mix, then label it",
+            "text": "Stopper and invert the flask ten times to mix, then label it.",
             "quantities": []
           }
         ],
@@ -144,7 +144,7 @@
         "comparisons": [
           {
             "stepN": 1,
-            "name": "flask volume",
+            "name": "volume",
             "expected": {
               "value": 100,
               "unit": "mL"
@@ -218,7 +218,17 @@
             "tool": "ratio_check (unit_normalize → observed/expected)"
           }
         ],
-        "deviations": [],
+        "deviations": [
+          {
+            "id": "unverified-m-4-plated volume",
+            "code": "UNVERIFIED_EXTRACTION",
+            "severity": "info",
+            "stepN": 4,
+            "title": "Dropped a model value not found in the manual",
+            "message": "The model proposed 10 x for “plated volume”, but that number does not appear in the lab-manual text (or the unit is not recognized), so it was not used.",
+            "tool": "provenance_check (number must appear in source)"
+          }
+        ],
         "trace": [
           {
             "t": 0,
@@ -226,37 +236,37 @@
             "label": "groq: extract steps + recorded values"
           },
           {
-            "t": 828,
+            "t": 1375,
             "kind": "model",
             "label": "Extraction parsed",
-            "detail": "4 steps, 3 recorded values, 700+543 tokens, 828 ms"
+            "detail": "4 steps, 3 recorded values, 700+645 tokens, 1374 ms"
           },
           {
-            "t": 829,
+            "t": 1375,
             "kind": "check",
             "label": "provenance_check",
-            "detail": "0 model value(s) rejected as not present in source text"
+            "detail": "1 model value(s) rejected as not present in source text"
           },
           {
-            "t": 831,
+            "t": 1377,
             "kind": "tool",
             "label": "regex_parse (recall net)",
-            "detail": "5 value(s) the model skipped were added from the deterministic parser"
+            "detail": "4 value(s) the model skipped were added from the deterministic parser"
           },
           {
-            "t": 832,
+            "t": 1378,
             "kind": "tool",
             "label": "ratio_check",
             "detail": "5 protocol values compared at ±10%"
           },
           {
-            "t": 832,
+            "t": 1378,
             "kind": "tool",
             "label": "dilution (M1·V1=M2·V2)",
             "detail": "working concentration within tolerance or not applicable"
           },
           {
-            "t": 832,
+            "t": 1378,
             "kind": "check",
             "label": "done",
             "detail": "0 error(s), 0 warning(s)"
@@ -268,13 +278,13 @@
             "model": "openai/gpt-oss-20b",
             "purpose": "extract steps + notebook values",
             "promptTokens": 700,
-            "completionTokens": 543,
-            "ms": 828,
-            "listPriceUsd": 0.0002154
+            "completionTokens": 645,
+            "ms": 1374,
+            "listPriceUsd": 0.000246
           }
         ],
         "warnings": [],
-        "startedAt": "2026-11-25T23:53:07.584Z"
+        "startedAt": "2026-11-26T00:01:54.111Z"
       }
     },
     {
@@ -286,9 +296,9 @@
       "errors": 0,
       "warnings": 0,
       "topFinding": "no deviations",
-      "tokens": 1472,
-      "modelMs": 1012,
-      "wallMs": 1059,
+      "tokens": 1496,
+      "modelMs": 1125,
+      "wallMs": 1174,
       "models": "groq:openai/gpt-oss-20b",
       "repeatNote": "",
       "screenshot": "02-ordinary-serial-dilution.png",
@@ -297,10 +307,10 @@
         "steps": [
           {
             "n": 1,
-            "text": "add 9.0 mL of sterile saline to each tube",
+            "text": "Label four dilution tubes 10^-1 through 10^-4 and add 9.0 mL of sterile saline to each.",
             "quantities": [
               {
-                "name": "saline",
+                "name": "saline volume",
                 "value": 9,
                 "unit": "mL",
                 "role": "volume",
@@ -310,10 +320,10 @@
           },
           {
             "n": 2,
-            "text": "transfer 1.0 mL of the overnight culture into the 10^-1 tube",
+            "text": "Transfer 1.0 mL of the overnight culture into the 10^-1 tube and vortex for 5 s.",
             "quantities": [
               {
-                "name": "overnight culture",
+                "name": "transfer volume",
                 "value": 1,
                 "unit": "mL",
                 "role": "transfer_volume",
@@ -330,10 +340,10 @@
           },
           {
             "n": 3,
-            "text": "repeat the 1.0 mL transfer down the series to the 10^-4 tube",
+            "text": "Repeat the 1.0 mL transfer down the series to the 10^-4 tube, changing tips each time.",
             "quantities": [
               {
-                "name": "overnight culture",
+                "name": "transfer volume",
                 "value": 1,
                 "unit": "mL",
                 "role": "transfer_volume",
@@ -343,10 +353,10 @@
           },
           {
             "n": 4,
-            "text": "spread 0.1 mL from the 10^-4 tube onto an LB agar plate",
+            "text": "Spread 0.1 mL from the 10^-4 tube onto an LB agar plate.",
             "quantities": [
               {
-                "name": "10^-4 tube sample",
+                "name": "plated volume",
                 "value": 0.1,
                 "unit": "mL",
                 "role": "plated_volume",
@@ -356,7 +366,7 @@
           },
           {
             "n": 5,
-            "text": "incubate the plate upside down at 37 °C for 24 h",
+            "text": "Incubate the plate upside down at 37 °C for 24 h, then count colonies.",
             "quantities": [
               {
                 "name": "temperature",
@@ -378,7 +388,7 @@
         "actuals": [
           {
             "stepN": 1,
-            "name": "saline",
+            "name": "saline volume",
             "value": 9,
             "unit": "mL",
             "role": "volume",
@@ -387,7 +397,7 @@
           },
           {
             "stepN": 2,
-            "name": "overnight culture",
+            "name": "transfer volume",
             "value": 1,
             "unit": "mL",
             "role": "transfer_volume",
@@ -396,7 +406,7 @@
           },
           {
             "stepN": 3,
-            "name": "overnight culture",
+            "name": "transfer volume",
             "value": 1,
             "unit": "mL",
             "role": "transfer_volume",
@@ -405,7 +415,7 @@
           },
           {
             "stepN": 4,
-            "name": "10^-4 tube sample",
+            "name": "plated volume",
             "value": 0.1,
             "unit": "mL",
             "role": "plated_volume",
@@ -443,7 +453,7 @@
         "comparisons": [
           {
             "stepN": 1,
-            "name": "saline",
+            "name": "saline volume",
             "expected": {
               "value": 9,
               "unit": "mL"
@@ -458,7 +468,7 @@
           },
           {
             "stepN": 2,
-            "name": "overnight culture",
+            "name": "transfer volume",
             "expected": {
               "value": 1,
               "unit": "mL"
@@ -488,7 +498,7 @@
           },
           {
             "stepN": 3,
-            "name": "overnight culture",
+            "name": "transfer volume",
             "expected": {
               "value": 1,
               "unit": "mL"
@@ -503,7 +513,7 @@
           },
           {
             "stepN": 4,
-            "name": "10^-4 tube sample",
+            "name": "plated volume",
             "expected": {
               "value": 0.1,
               "unit": "mL"
@@ -555,37 +565,37 @@
             "label": "groq: extract steps + recorded values"
           },
           {
-            "t": 1012,
+            "t": 1125,
             "kind": "model",
             "label": "Extraction parsed",
-            "detail": "5 steps, 6 recorded values, 736+736 tokens, 1012 ms"
+            "detail": "5 steps, 6 recorded values, 736+760 tokens, 1125 ms"
           },
           {
-            "t": 1013,
+            "t": 1125,
             "kind": "check",
             "label": "provenance_check",
             "detail": "0 model value(s) rejected as not present in source text"
           },
           {
-            "t": 1013,
+            "t": 1126,
             "kind": "tool",
             "label": "regex_parse (recall net)",
             "detail": "2 value(s) the model skipped were added from the deterministic parser"
           },
           {
-            "t": 1013,
+            "t": 1126,
             "kind": "tool",
             "label": "ratio_check",
             "detail": "7 protocol values compared at ±10%"
           },
           {
-            "t": 1013,
+            "t": 1126,
             "kind": "tool",
             "label": "dilution (M1·V1=M2·V2)",
             "detail": "working concentration within tolerance or not applicable"
           },
           {
-            "t": 1013,
+            "t": 1126,
             "kind": "check",
             "label": "done",
             "detail": "0 error(s), 0 warning(s)"
@@ -597,13 +607,13 @@
             "model": "openai/gpt-oss-20b",
             "purpose": "extract steps + notebook values",
             "promptTokens": 736,
-            "completionTokens": 736,
-            "ms": 1012,
-            "listPriceUsd": 0.000276
+            "completionTokens": 760,
+            "ms": 1125,
+            "listPriceUsd": 0.0002832
           }
         ],
         "warnings": [],
-        "startedAt": "2026-11-25T23:53:15.729Z"
+        "startedAt": "2026-11-26T00:02:02.810Z"
       }
     },
     {
@@ -615,9 +625,9 @@
       "errors": 0,
       "warnings": 0,
       "topFinding": "Dropped a model value not found in the manual",
-      "tokens": 1245,
-      "modelMs": 732,
-      "wallMs": 791,
+      "tokens": 1427,
+      "modelMs": 1013,
+      "wallMs": 1060,
       "models": "groq:openai/gpt-oss-20b",
       "repeatNote": "same findings as run 01, identical comparison table",
       "screenshot": "03-repeat-nacl.png",
@@ -629,7 +639,7 @@
             "text": "Rinse a 100.0 mL volumetric flask three times with deionized water.",
             "quantities": [
               {
-                "name": "flask volume",
+                "name": "volume",
                 "value": 100,
                 "unit": "mL",
                 "role": "volume",
@@ -641,13 +651,6 @@
             "n": 2,
             "text": "Using a 10 mL volumetric pipette, transfer 10.0 mL of the 1.0 M NaCl stock solution into the flask.",
             "quantities": [
-              {
-                "name": "pipette volume",
-                "value": 10,
-                "unit": "mL",
-                "role": "volume",
-                "quote": "10 mL"
-              },
               {
                 "name": "transfer volume",
                 "value": 10,
@@ -661,6 +664,13 @@
                 "unit": "M",
                 "role": "stock_concentration",
                 "quote": "1.0 M"
+              },
+              {
+                "name": "pipette size",
+                "value": 10,
+                "unit": "mL",
+                "role": "volume",
+                "quote": "10 mL"
               }
             ]
           },
@@ -691,15 +701,6 @@
           }
         ],
         "actuals": [
-          {
-            "stepN": 1,
-            "name": "flask volume",
-            "value": 100,
-            "unit": "mL",
-            "role": "volume",
-            "quote": "100 mL",
-            "source": "model"
-          },
           {
             "stepN": 2,
             "name": "transfer volume",
@@ -737,6 +738,15 @@
             "source": "model"
           },
           {
+            "name": "flask size",
+            "value": 100,
+            "unit": "mL",
+            "role": "volume",
+            "quote": "100 mL",
+            "stepN": 1,
+            "source": "regex"
+          },
+          {
             "name": "pipette size",
             "value": 10,
             "unit": "mL",
@@ -749,28 +759,13 @@
         "comparisons": [
           {
             "stepN": 1,
-            "name": "flask volume",
+            "name": "volume",
             "expected": {
               "value": 100,
               "unit": "mL"
             },
             "observed": {
               "value": 100,
-              "unit": "mL"
-            },
-            "ratio": 1,
-            "status": "ok",
-            "tool": "ratio_check (unit_normalize → observed/expected)"
-          },
-          {
-            "stepN": 2,
-            "name": "pipette volume",
-            "expected": {
-              "value": 10,
-              "unit": "mL"
-            },
-            "observed": {
-              "value": 10,
               "unit": "mL"
             },
             "ratio": 1,
@@ -808,6 +803,21 @@
             "tool": "ratio_check (unit_normalize → observed/expected)"
           },
           {
+            "stepN": 2,
+            "name": "pipette size",
+            "expected": {
+              "value": 10,
+              "unit": "mL"
+            },
+            "observed": {
+              "value": 10,
+              "unit": "mL"
+            },
+            "ratio": 1,
+            "status": "ok",
+            "tool": "ratio_check (unit_normalize → observed/expected)"
+          },
+          {
             "stepN": 3,
             "name": "final volume",
             "expected": {
@@ -830,7 +840,7 @@
             "severity": "info",
             "stepN": 4,
             "title": "Dropped a model value not found in the manual",
-            "message": "The model proposed 10 times for “inversions”, but that number does not appear in the lab-manual text (or the unit is not recognized), so it was not used.",
+            "message": "The model proposed 10 x for “inversions”, but that number does not appear in the lab-manual text (or the unit is not recognized), so it was not used.",
             "tool": "provenance_check (number must appear in source)"
           }
         ],
@@ -841,37 +851,37 @@
             "label": "groq: extract steps + recorded values"
           },
           {
-            "t": 732,
+            "t": 1013,
             "kind": "model",
             "label": "Extraction parsed",
-            "detail": "4 steps, 5 recorded values, 700+545 tokens, 732 ms"
+            "detail": "4 steps, 4 recorded values, 700+727 tokens, 1013 ms"
           },
           {
-            "t": 732,
+            "t": 1013,
             "kind": "check",
             "label": "provenance_check",
             "detail": "1 model value(s) rejected as not present in source text"
           },
           {
-            "t": 732,
+            "t": 1014,
             "kind": "tool",
             "label": "regex_parse (recall net)",
-            "detail": "1 value(s) the model skipped were added from the deterministic parser"
+            "detail": "3 value(s) the model skipped were added from the deterministic parser"
           },
           {
-            "t": 733,
+            "t": 1014,
             "kind": "tool",
             "label": "ratio_check",
             "detail": "5 protocol values compared at ±10%"
           },
           {
-            "t": 733,
+            "t": 1014,
             "kind": "tool",
             "label": "dilution (M1·V1=M2·V2)",
             "detail": "working concentration within tolerance or not applicable"
           },
           {
-            "t": 733,
+            "t": 1014,
             "kind": "check",
             "label": "done",
             "detail": "0 error(s), 0 warning(s)"
@@ -883,13 +893,13 @@
             "model": "openai/gpt-oss-20b",
             "purpose": "extract steps + notebook values",
             "promptTokens": 700,
-            "completionTokens": 545,
-            "ms": 732,
-            "listPriceUsd": 0.000216
+            "completionTokens": 727,
+            "ms": 1013,
+            "listPriceUsd": 0.0002706
           }
         ],
         "warnings": [],
-        "startedAt": "2026-11-25T23:53:24.029Z"
+        "startedAt": "2026-11-26T00:02:11.259Z"
       }
     },
     {
@@ -899,11 +909,11 @@
       "mode": "live",
       "pass": true,
       "errors": 3,
-      "warnings": 1,
-      "topFinding": "Step 2: 10× less transfer_volume than the protocol",
-      "tokens": 1596,
-      "modelMs": 1277,
-      "wallMs": 1333,
+      "warnings": 0,
+      "topFinding": "Step 2: 10× less transfer volume than the protocol",
+      "tokens": 1312,
+      "modelMs": 932,
+      "wallMs": 987,
       "models": "groq:openai/gpt-oss-20b",
       "repeatNote": "",
       "screenshot": "04-catch-10x.png",
@@ -915,657 +925,7 @@
             "text": "Rinse a 100.0 mL volumetric flask three times with deionized water.",
             "quantities": [
               {
-                "name": "volume",
-                "value": 100,
-                "unit": "mL",
-                "role": "volume",
-                "quote": "100.0 mL"
-              }
-            ]
-          },
-          {
-            "n": 2,
-            "text": "Using a 10 mL volumetric pipette, transfer 10.0 mL of the 1.0 M NaCl stock solution into the flask.",
-            "quantities": [
-              {
-                "name": "transfer_volume",
-                "value": 10,
-                "unit": "mL",
-                "role": "transfer_volume",
-                "quote": "10.0 mL"
-              },
-              {
-                "name": "stock_concentration",
-                "value": 1,
-                "unit": "M",
-                "role": "stock_concentration",
-                "quote": "1.0 M"
-              },
-              {
-                "name": "pipette size",
-                "value": 10,
-                "unit": "mL",
-                "role": "volume",
-                "quote": "10 mL"
-              }
-            ]
-          },
-          {
-            "n": 3,
-            "text": "Dilute to the mark (100.0 mL total) with deionized water to make 0.10 M NaCl.",
-            "quantities": [
-              {
-                "name": "final_volume",
-                "value": 100,
-                "unit": "mL",
-                "role": "final_volume",
-                "quote": "100.0 mL"
-              },
-              {
-                "name": "target_concentration",
-                "value": 0.1,
-                "unit": "M",
-                "role": "target_concentration",
-                "quote": "0.10 M"
-              }
-            ]
-          },
-          {
-            "n": 4,
-            "text": "Stopper and invert the flask ten times to mix, then label it.",
-            "quantities": []
-          }
-        ],
-        "actuals": [
-          {
-            "stepN": 2,
-            "name": "transfer_volume",
-            "value": 1,
-            "unit": "mL",
-            "role": "transfer_volume",
-            "quote": "1.0 mL",
-            "source": "model"
-          },
-          {
-            "stepN": 2,
-            "name": "stock_concentration",
-            "value": 1,
-            "unit": "M",
-            "role": "stock_concentration",
-            "quote": "1.0 M",
-            "source": "model"
-          },
-          {
-            "stepN": 3,
-            "name": "final_volume",
-            "value": 100,
-            "unit": "mL",
-            "role": "final_volume",
-            "quote": "100.0 mL",
-            "source": "model"
-          },
-          {
-            "name": "flask size",
-            "value": 100,
-            "unit": "mL",
-            "role": "volume",
-            "quote": "100 mL",
-            "stepN": 1,
-            "source": "regex"
-          },
-          {
-            "name": "pipette size",
-            "value": 1,
-            "unit": "mL",
-            "role": "volume",
-            "quote": "1 mL",
-            "stepN": 2,
-            "source": "regex"
-          },
-          {
-            "name": "labeled",
-            "value": 0.1,
-            "unit": "M",
-            "role": "other",
-            "quote": "0.10 M",
-            "stepN": 4,
-            "source": "regex"
-          }
-        ],
-        "comparisons": [
-          {
-            "stepN": 1,
-            "name": "volume",
-            "expected": {
-              "value": 100,
-              "unit": "mL"
-            },
-            "observed": {
-              "value": 100,
-              "unit": "mL"
-            },
-            "ratio": 1,
-            "status": "ok",
-            "tool": "ratio_check (unit_normalize → observed/expected)"
-          },
-          {
-            "stepN": 2,
-            "name": "transfer_volume",
-            "expected": {
-              "value": 10,
-              "unit": "mL"
-            },
-            "observed": {
-              "value": 1,
-              "unit": "mL"
-            },
-            "ratio": 0.1,
-            "status": "error",
-            "tool": "ratio_check (unit_normalize → observed/expected)"
-          },
-          {
-            "stepN": 2,
-            "name": "stock_concentration",
-            "expected": {
-              "value": 1,
-              "unit": "M"
-            },
-            "observed": {
-              "value": 1,
-              "unit": "M"
-            },
-            "ratio": 1,
-            "status": "ok",
-            "tool": "ratio_check (unit_normalize → observed/expected)"
-          },
-          {
-            "stepN": 2,
-            "name": "pipette size",
-            "expected": {
-              "value": 10,
-              "unit": "mL"
-            },
-            "observed": {
-              "value": 1,
-              "unit": "mL"
-            },
-            "ratio": 0.1,
-            "status": "error",
-            "tool": "ratio_check (unit_normalize → observed/expected)"
-          },
-          {
-            "stepN": 3,
-            "name": "final_volume",
-            "expected": {
-              "value": 100,
-              "unit": "mL"
-            },
-            "observed": {
-              "value": 100,
-              "unit": "mL"
-            },
-            "ratio": 1,
-            "status": "ok",
-            "tool": "ratio_check (unit_normalize → observed/expected)"
-          }
-        ],
-        "deviations": [
-          {
-            "id": "tenx-2-transfer_volume",
-            "code": "TEN_X_ERROR",
-            "severity": "error",
-            "stepN": 2,
-            "title": "Step 2: 10× less transfer_volume than the protocol",
-            "message": "You recorded 1 mL; the lab manual says 10 mL. That is exactly a 10× (÷10) difference, the signature of a misplaced decimal or wrong pipette.",
-            "expected": "10 mL",
-            "observed": "1 mL",
-            "factor": 10,
-            "suggestion": "Redo step 2 with 10 mL, or ask your TA before using this solution downstream.",
-            "tool": "ratio_check (unit_normalize → observed/expected)"
-          },
-          {
-            "id": "tenx-2-pipette size",
-            "code": "TEN_X_ERROR",
-            "severity": "error",
-            "stepN": 2,
-            "title": "Step 2: 10× less pipette size than the protocol",
-            "message": "You recorded 1 mL; the lab manual says 10 mL. That is exactly a 10× (÷10) difference, the signature of a misplaced decimal or wrong pipette.",
-            "expected": "10 mL",
-            "observed": "1 mL",
-            "factor": 10,
-            "suggestion": "Redo step 2 with 10 mL, or ask your TA before using this solution downstream.",
-            "tool": "ratio_check (unit_normalize → observed/expected)"
-          },
-          {
-            "id": "dilution-target",
-            "code": "DILUTION_TARGET_MISSED",
-            "severity": "error",
-            "stepN": 2,
-            "title": "Working solution is 0.01 M, not 0.1 M",
-            "message": "1 M × 1 mL ÷ 100 mL = 0.01 M (10.0× too dilute). Everything made from it inherits this error.",
-            "expected": "0.1 M",
-            "observed": "0.01 M",
-            "factor": 10,
-            "suggestion": "Use V1 = 10 mL of 1 M stock in 100 mL total.",
-            "tool": "dilution (M1·V1 = M2·V2)"
-          },
-          {
-            "id": "note-0",
-            "code": "OFF_PROTOCOL_STEP",
-            "severity": "warning",
-            "stepN": 2,
-            "title": "Step 2: student note (changed)",
-            "message": "“pipetted 1.0 mL of 1.0 M NaCl stock into flask”: flagged from the notebook text; the model located it and the quote was verified, but no number was computed.",
-            "tool": "model locate + quote_check"
-          }
-        ],
-        "trace": [
-          {
-            "t": 0,
-            "kind": "model",
-            "label": "groq: extract steps + recorded values"
-          },
-          {
-            "t": 1277,
-            "kind": "model",
-            "label": "Extraction parsed",
-            "detail": "4 steps, 3 recorded values, 702+894 tokens, 1277 ms"
-          },
-          {
-            "t": 1278,
-            "kind": "check",
-            "label": "provenance_check",
-            "detail": "0 model value(s) rejected as not present in source text"
-          },
-          {
-            "t": 1278,
-            "kind": "tool",
-            "label": "regex_parse (recall net)",
-            "detail": "4 value(s) the model skipped were added from the deterministic parser"
-          },
-          {
-            "t": 1278,
-            "kind": "tool",
-            "label": "ratio_check",
-            "detail": "5 protocol values compared at ±10%"
-          },
-          {
-            "t": 1278,
-            "kind": "tool",
-            "label": "dilution (M1·V1=M2·V2)",
-            "detail": "Working solution is 0.01 M, not 0.1 M"
-          },
-          {
-            "t": 1279,
-            "kind": "check",
-            "label": "done",
-            "detail": "3 error(s), 1 warning(s)"
-          }
-        ],
-        "ledger": [
-          {
-            "provider": "groq",
-            "model": "openai/gpt-oss-20b",
-            "purpose": "extract steps + notebook values",
-            "promptTokens": 702,
-            "completionTokens": 894,
-            "ms": 1277,
-            "listPriceUsd": 0.00032084999999999997
-          }
-        ],
-        "warnings": [],
-        "startedAt": "2026-11-25T23:53:32.082Z"
-      }
-    },
-    {
-      "id": "05-harder-messy-notebook",
-      "rubric": "R4 demanding example (messy notes, missing units, off-protocol)",
-      "server": "live",
-      "mode": "live",
-      "pass": true,
-      "errors": 1,
-      "warnings": 3,
-      "topFinding": "Step 4: time -60% vs protocol",
-      "tokens": 1615,
-      "modelMs": 1377,
-      "wallMs": 1423,
-      "models": "groq:openai/gpt-oss-20b",
-      "repeatNote": "",
-      "screenshot": "05-harder-messy-notebook.png",
-      "raw": {
-        "mode": "live",
-        "steps": [
-          {
-            "n": 1,
-            "text": "Obtain about 30 mL of 0.500 M CuSO4 stock in a clean, dry beaker.",
-            "quantities": [
-              {
-                "name": "volume",
-                "value": 30,
-                "unit": "mL",
-                "role": "volume",
-                "quote": "about 30 mL"
-              },
-              {
-                "name": "stock_concentration",
-                "value": 0.5,
-                "unit": "M",
-                "role": "stock_concentration",
-                "quote": "0.500 M"
-              }
-            ]
-          },
-          {
-            "n": 2,
-            "text": "Pipette 25.00 mL of the stock into a 250.0 mL volumetric flask.",
-            "quantities": [
-              {
-                "name": "transfer_volume",
-                "value": 25,
-                "unit": "mL",
-                "role": "transfer_volume",
-                "quote": "25.00 mL"
-              },
-              {
-                "name": "final_volume",
-                "value": 250,
-                "unit": "mL",
-                "role": "final_volume",
-                "quote": "250.0 mL"
-              }
-            ]
-          },
-          {
-            "n": 3,
-            "text": "Dilute to the mark with DI water to give 0.0500 M CuSO4. Stopper and invert 15 times.",
-            "quantities": [
-              {
-                "name": "target_concentration",
-                "value": 0.05,
-                "unit": "M",
-                "role": "target_concentration",
-                "quote": "0.0500 M"
-              }
-            ]
-          },
-          {
-            "n": 4,
-            "text": "Let the solution equilibrate for 5 min at 20 °C before measuring absorbance.",
-            "quantities": [
-              {
-                "name": "time",
-                "value": 5,
-                "unit": "min",
-                "role": "time",
-                "quote": "5 min"
-              },
-              {
-                "name": "temperature",
-                "value": 20,
-                "unit": "°C",
-                "role": "temperature",
-                "quote": "20 °C"
-              }
-            ]
-          }
-        ],
-        "actuals": [
-          {
-            "stepN": 1,
-            "name": "volume",
-            "value": 30,
-            "unit": "mL",
-            "role": "volume",
-            "quote": "~30ml stock",
-            "source": "model"
-          },
-          {
-            "stepN": 2,
-            "name": "transfer_volume",
-            "value": 25,
-            "unit": "mL",
-            "role": "transfer_volume",
-            "quote": "25 mL stock",
-            "source": "model"
-          },
-          {
-            "stepN": 2,
-            "name": "final_volume",
-            "value": 250,
-            "unit": "mL",
-            "role": "final_volume",
-            "quote": "250 flask",
-            "source": "model"
-          },
-          {
-            "stepN": 4,
-            "name": "time",
-            "value": 2,
-            "unit": "min",
-            "role": "time",
-            "quote": "2 min",
-            "source": "model"
-          },
-          {
-            "name": "stock concentration",
-            "value": 0.5,
-            "unit": "M",
-            "role": "stock_concentration",
-            "quote": "0.5M",
-            "source": "regex"
-          }
-        ],
-        "comparisons": [
-          {
-            "stepN": 1,
-            "name": "volume",
-            "expected": {
-              "value": 30,
-              "unit": "mL"
-            },
-            "observed": {
-              "value": 30,
-              "unit": "mL"
-            },
-            "ratio": 1,
-            "status": "ok",
-            "tool": "ratio_check (unit_normalize → observed/expected)"
-          },
-          {
-            "stepN": 1,
-            "name": "stock_concentration",
-            "expected": {
-              "value": 0.5,
-              "unit": "M"
-            },
-            "observed": {
-              "value": 0.5,
-              "unit": "M"
-            },
-            "ratio": 1,
-            "status": "ok",
-            "tool": "ratio_check (unit_normalize → observed/expected)"
-          },
-          {
-            "stepN": 2,
-            "name": "transfer_volume",
-            "expected": {
-              "value": 25,
-              "unit": "mL"
-            },
-            "observed": {
-              "value": 25,
-              "unit": "mL"
-            },
-            "ratio": 1,
-            "status": "ok",
-            "tool": "ratio_check (unit_normalize → observed/expected)"
-          },
-          {
-            "stepN": 2,
-            "name": "final_volume",
-            "expected": {
-              "value": 250,
-              "unit": "mL"
-            },
-            "observed": {
-              "value": 250,
-              "unit": "mL"
-            },
-            "ratio": 1,
-            "status": "ok",
-            "tool": "ratio_check (unit_normalize → observed/expected)"
-          },
-          {
-            "stepN": 4,
-            "name": "time",
-            "expected": {
-              "value": 5,
-              "unit": "min"
-            },
-            "observed": {
-              "value": 2,
-              "unit": "min"
-            },
-            "ratio": 0.4,
-            "status": "error",
-            "tool": "ratio_check (unit_normalize → observed/expected)"
-          },
-          {
-            "stepN": 4,
-            "name": "temperature",
-            "expected": {
-              "value": 20,
-              "unit": "°C"
-            },
-            "ratio": null,
-            "status": "missing",
-            "tool": "match (step + role + name)"
-          }
-        ],
-        "deviations": [
-          {
-            "id": "tol-4-time",
-            "code": "OUT_OF_TOLERANCE",
-            "severity": "error",
-            "stepN": 4,
-            "title": "Step 4: time -60% vs protocol",
-            "message": "Recorded 2 min vs 5 min (tolerance ±10%).",
-            "expected": "5 min",
-            "observed": "2 min",
-            "tool": "ratio_check (unit_normalize → observed/expected)"
-          },
-          {
-            "id": "missing-4-temperature",
-            "code": "MISSING_VALUE",
-            "severity": "warning",
-            "stepN": 4,
-            "title": "Step 4: no recorded temperature",
-            "message": "The protocol specifies 20 °C for “temperature”, but the notebook has no matching value. Record what you actually used before trusting downstream results.",
-            "expected": "20 °C",
-            "tool": "match (step + role + name)"
-          },
-          {
-            "id": "note-0",
-            "code": "OFF_PROTOCOL_STEP",
-            "severity": "warning",
-            "stepN": 4,
-            "title": "Step 4: student note (skipped)",
-            "message": "“forgot to stopper before inverting”: flagged from the notebook text; the model located it and the quote was verified, but no number was computed.",
-            "tool": "model locate + quote_check"
-          },
-          {
-            "id": "note-1",
-            "code": "OFF_PROTOCOL_STEP",
-            "severity": "warning",
-            "stepN": 4,
-            "title": "Step 4: student note (changed)",
-            "message": "“waited 2 min bc line for the spec”: flagged from the notebook text; the model located it and the quote was verified, but no number was computed.",
-            "tool": "model locate + quote_check"
-          }
-        ],
-        "trace": [
-          {
-            "t": 0,
-            "kind": "model",
-            "label": "groq: extract steps + recorded values"
-          },
-          {
-            "t": 1377,
-            "kind": "model",
-            "label": "Extraction parsed",
-            "detail": "4 steps, 4 recorded values, 687+928 tokens, 1377 ms"
-          },
-          {
-            "t": 1377,
-            "kind": "check",
-            "label": "provenance_check",
-            "detail": "0 model value(s) rejected as not present in source text"
-          },
-          {
-            "t": 1377,
-            "kind": "tool",
-            "label": "regex_parse (recall net)",
-            "detail": "1 value(s) the model skipped were added from the deterministic parser"
-          },
-          {
-            "t": 1377,
-            "kind": "tool",
-            "label": "ratio_check",
-            "detail": "6 protocol values compared at ±10%"
-          },
-          {
-            "t": 1377,
-            "kind": "tool",
-            "label": "dilution (M1·V1=M2·V2)",
-            "detail": "working concentration within tolerance or not applicable"
-          },
-          {
-            "t": 1377,
-            "kind": "check",
-            "label": "done",
-            "detail": "1 error(s), 3 warning(s)"
-          }
-        ],
-        "ledger": [
-          {
-            "provider": "groq",
-            "model": "openai/gpt-oss-20b",
-            "purpose": "extract steps + notebook values",
-            "promptTokens": 687,
-            "completionTokens": 928,
-            "ms": 1377,
-            "listPriceUsd": 0.00032992499999999996
-          }
-        ],
-        "warnings": [],
-        "startedAt": "2026-11-25T23:53:40.694Z"
-      }
-    },
-    {
-      "id": "06-harder-handwritten-photo",
-      "rubric": "R4 demanding example (handwritten page via Gemini vision)",
-      "server": "live",
-      "mode": "live",
-      "pass": true,
-      "errors": 3,
-      "warnings": 1,
-      "topFinding": "Step 2: 10× less transfer volume than the protocol",
-      "tokens": 2486,
-      "modelMs": 5690,
-      "wallMs": 5780,
-      "models": "gemini:gemini-3.5-flash-lite, groq:openai/gpt-oss-20b",
-      "repeatNote": "",
-      "screenshot": "06-harder-handwritten-photo.png",
-      "raw": {
-        "mode": "live",
-        "steps": [
-          {
-            "n": 1,
-            "text": "Rinse a 100.0 mL volumetric flask three times with deionized water.",
-            "quantities": [
-              {
-                "name": "volumetric flask volume",
+                "name": "volumetric flask",
                 "value": 100,
                 "unit": "mL",
                 "role": "volume",
@@ -1628,15 +988,6 @@
         ],
         "actuals": [
           {
-            "stepN": 1,
-            "name": "volumetric flask volume",
-            "value": 100,
-            "unit": "mL",
-            "role": "volume",
-            "quote": "100 mL",
-            "source": "model"
-          },
-          {
             "stepN": 2,
             "name": "transfer volume",
             "value": 1,
@@ -1646,13 +997,22 @@
             "source": "model"
           },
           {
-            "stepN": 3,
+            "name": "flask size",
+            "value": 100,
+            "unit": "mL",
+            "role": "volume",
+            "quote": "100 mL",
+            "stepN": 1,
+            "source": "regex"
+          },
+          {
             "name": "final volume",
             "value": 100,
             "unit": "mL",
             "role": "final_volume",
             "quote": "100.0 mL",
-            "source": "model"
+            "stepN": 3,
+            "source": "regex"
           },
           {
             "name": "pipette size",
@@ -1660,6 +1020,7 @@
             "unit": "mL",
             "role": "volume",
             "quote": "1 mL",
+            "stepN": 2,
             "source": "regex"
           },
           {
@@ -1684,7 +1045,7 @@
         "comparisons": [
           {
             "stepN": 1,
-            "name": "volumetric flask volume",
+            "name": "volumetric flask",
             "expected": {
               "value": 100,
               "unit": "mL"
@@ -1773,11 +1134,642 @@
             "tool": "ratio_check (unit_normalize → observed/expected)"
           },
           {
+            "id": "dilution-target",
+            "code": "DILUTION_TARGET_MISSED",
+            "severity": "error",
+            "stepN": 2,
+            "title": "Working solution is 0.01 M, not 0.1 M",
+            "message": "1 M × 1 mL ÷ 100 mL = 0.01 M (10.0× too dilute). Everything made from it inherits this error.",
+            "expected": "0.1 M",
+            "observed": "0.01 M",
+            "factor": 10,
+            "suggestion": "Use V1 = 10 mL of 1 M stock in 100 mL total.",
+            "tool": "dilution (M1·V1 = M2·V2)"
+          },
+          {
             "id": "tenx-2-pipette size",
             "code": "TEN_X_ERROR",
             "severity": "error",
             "stepN": 2,
             "title": "Step 2: 10× less pipette size than the protocol",
+            "message": "You recorded 1 mL; the lab manual says 10 mL. That is exactly a 10× (÷10) difference, the signature of a misplaced decimal or wrong pipette.",
+            "expected": "10 mL",
+            "observed": "1 mL",
+            "factor": 10,
+            "suggestion": "Redo step 2 with 10 mL, or ask your TA before using this solution downstream.",
+            "tool": "ratio_check (unit_normalize → observed/expected)"
+          }
+        ],
+        "trace": [
+          {
+            "t": 0,
+            "kind": "model",
+            "label": "groq: extract steps + recorded values"
+          },
+          {
+            "t": 932,
+            "kind": "model",
+            "label": "Extraction parsed",
+            "detail": "4 steps, 1 recorded values, 702+610 tokens, 932 ms"
+          },
+          {
+            "t": 932,
+            "kind": "check",
+            "label": "provenance_check",
+            "detail": "0 model value(s) rejected as not present in source text"
+          },
+          {
+            "t": 933,
+            "kind": "tool",
+            "label": "regex_parse (recall net)",
+            "detail": "7 value(s) the model skipped were added from the deterministic parser"
+          },
+          {
+            "t": 934,
+            "kind": "tool",
+            "label": "ratio_check",
+            "detail": "5 protocol values compared at ±10%"
+          },
+          {
+            "t": 934,
+            "kind": "tool",
+            "label": "dilution (M1·V1=M2·V2)",
+            "detail": "Working solution is 0.01 M, not 0.1 M"
+          },
+          {
+            "t": 934,
+            "kind": "check",
+            "label": "done",
+            "detail": "3 error(s), 0 warning(s)"
+          }
+        ],
+        "ledger": [
+          {
+            "provider": "groq",
+            "model": "openai/gpt-oss-20b",
+            "purpose": "extract steps + notebook values",
+            "promptTokens": 702,
+            "completionTokens": 610,
+            "ms": 932,
+            "listPriceUsd": 0.00023565
+          }
+        ],
+        "warnings": [],
+        "startedAt": "2026-11-26T00:02:19.575Z"
+      }
+    },
+    {
+      "id": "05-harder-messy-notebook",
+      "rubric": "R4 demanding example (messy notes, missing units, off-protocol)",
+      "server": "live",
+      "mode": "live",
+      "pass": true,
+      "errors": 1,
+      "warnings": 4,
+      "topFinding": "Step 4: time -60% vs protocol",
+      "tokens": 1565,
+      "modelMs": 1545,
+      "wallMs": 1596,
+      "models": "groq:openai/gpt-oss-20b",
+      "repeatNote": "",
+      "screenshot": "05-harder-messy-notebook.png",
+      "raw": {
+        "mode": "live",
+        "steps": [
+          {
+            "n": 1,
+            "text": "Obtain about 30 mL of 0.500 M CuSO4 stock in a clean, dry beaker.",
+            "quantities": [
+              {
+                "name": "volume",
+                "value": 30,
+                "unit": "mL",
+                "role": "volume",
+                "quote": "about 30 mL"
+              },
+              {
+                "name": "stock concentration",
+                "value": 0.5,
+                "unit": "M",
+                "role": "stock_concentration",
+                "quote": "0.500 M"
+              }
+            ]
+          },
+          {
+            "n": 2,
+            "text": "Pipette 25.00 mL of the stock into a 250.0 mL volumetric flask.",
+            "quantities": [
+              {
+                "name": "transfer volume",
+                "value": 25,
+                "unit": "mL",
+                "role": "transfer_volume",
+                "quote": "25.00 mL"
+              },
+              {
+                "name": "final volume",
+                "value": 250,
+                "unit": "mL",
+                "role": "final_volume",
+                "quote": "250.0 mL"
+              }
+            ]
+          },
+          {
+            "n": 3,
+            "text": "Dilute to the mark with DI water to give 0.0500 M CuSO4. Stopper and invert 15 times.",
+            "quantities": [
+              {
+                "name": "target concentration",
+                "value": 0.05,
+                "unit": "M",
+                "role": "target_concentration",
+                "quote": "0.0500 M"
+              }
+            ]
+          },
+          {
+            "n": 4,
+            "text": "Let the solution equilibrate for 5 min at 20 °C before measuring absorbance.",
+            "quantities": [
+              {
+                "name": "time",
+                "value": 5,
+                "unit": "min",
+                "role": "time",
+                "quote": "5 min"
+              },
+              {
+                "name": "temperature",
+                "value": 20,
+                "unit": "°C",
+                "role": "temperature",
+                "quote": "20 °C"
+              }
+            ]
+          }
+        ],
+        "actuals": [
+          {
+            "stepN": 1,
+            "name": "volume",
+            "value": 30,
+            "unit": "mL",
+            "role": "volume",
+            "quote": "~30ml",
+            "source": "model"
+          },
+          {
+            "stepN": 2,
+            "name": "transfer volume",
+            "value": 25,
+            "unit": "mL",
+            "role": "transfer_volume",
+            "quote": "25 mL",
+            "source": "model"
+          },
+          {
+            "stepN": 2,
+            "name": "final volume",
+            "value": 250,
+            "unit": "mL",
+            "role": "final_volume",
+            "quote": "250 flask",
+            "source": "model"
+          },
+          {
+            "stepN": 4,
+            "name": "time",
+            "value": 2,
+            "unit": "min",
+            "role": "time",
+            "quote": "2 min",
+            "source": "model"
+          },
+          {
+            "name": "stock concentration",
+            "value": 0.5,
+            "unit": "M",
+            "role": "stock_concentration",
+            "quote": "0.5M",
+            "source": "regex"
+          }
+        ],
+        "comparisons": [
+          {
+            "stepN": 1,
+            "name": "volume",
+            "expected": {
+              "value": 30,
+              "unit": "mL"
+            },
+            "observed": {
+              "value": 30,
+              "unit": "mL"
+            },
+            "ratio": 1,
+            "status": "ok",
+            "tool": "ratio_check (unit_normalize → observed/expected)"
+          },
+          {
+            "stepN": 1,
+            "name": "stock concentration",
+            "expected": {
+              "value": 0.5,
+              "unit": "M"
+            },
+            "observed": {
+              "value": 0.5,
+              "unit": "M"
+            },
+            "ratio": 1,
+            "status": "ok",
+            "tool": "ratio_check (unit_normalize → observed/expected)"
+          },
+          {
+            "stepN": 2,
+            "name": "transfer volume",
+            "expected": {
+              "value": 25,
+              "unit": "mL"
+            },
+            "observed": {
+              "value": 25,
+              "unit": "mL"
+            },
+            "ratio": 1,
+            "status": "ok",
+            "tool": "ratio_check (unit_normalize → observed/expected)"
+          },
+          {
+            "stepN": 2,
+            "name": "final volume",
+            "expected": {
+              "value": 250,
+              "unit": "mL"
+            },
+            "observed": {
+              "value": 250,
+              "unit": "mL"
+            },
+            "ratio": 1,
+            "status": "ok",
+            "tool": "ratio_check (unit_normalize → observed/expected)"
+          },
+          {
+            "stepN": 4,
+            "name": "time",
+            "expected": {
+              "value": 5,
+              "unit": "min"
+            },
+            "observed": {
+              "value": 2,
+              "unit": "min"
+            },
+            "ratio": 0.4,
+            "status": "error",
+            "tool": "ratio_check (unit_normalize → observed/expected)"
+          },
+          {
+            "stepN": 4,
+            "name": "temperature",
+            "expected": {
+              "value": 20,
+              "unit": "°C"
+            },
+            "ratio": null,
+            "status": "missing",
+            "tool": "match (step + role + name)"
+          }
+        ],
+        "deviations": [
+          {
+            "id": "tol-4-time",
+            "code": "OUT_OF_TOLERANCE",
+            "severity": "error",
+            "stepN": 4,
+            "title": "Step 4: time -60% vs protocol",
+            "message": "Recorded 2 min vs 5 min (tolerance ±10%).",
+            "expected": "5 min",
+            "observed": "2 min",
+            "tool": "ratio_check (unit_normalize → observed/expected)"
+          },
+          {
+            "id": "missing-4-temperature",
+            "code": "MISSING_VALUE",
+            "severity": "warning",
+            "stepN": 4,
+            "title": "Step 4: no recorded temperature",
+            "message": "The protocol specifies 20 °C for “temperature”, but the notebook has no matching value. Record what you actually used before trusting downstream results.",
+            "expected": "20 °C",
+            "tool": "match (step + role + name)"
+          },
+          {
+            "id": "note-0",
+            "code": "OFF_PROTOCOL_STEP",
+            "severity": "warning",
+            "stepN": 4,
+            "title": "Step 4: student note (skipped)",
+            "message": "“forgot to stopper before inverting”: flagged from the notebook text; the model located it and the quote was verified, but no number was computed.",
+            "tool": "model locate + quote_check"
+          },
+          {
+            "id": "note-1",
+            "code": "OFF_PROTOCOL_STEP",
+            "severity": "warning",
+            "stepN": 4,
+            "title": "Step 4: student note (changed)",
+            "message": "“waited 2 min bc line for the spec”: flagged from the notebook text; the model located it and the quote was verified, but no number was computed.",
+            "tool": "model locate + quote_check"
+          },
+          {
+            "id": "note-2",
+            "code": "OFF_PROTOCOL_STEP",
+            "severity": "warning",
+            "stepN": 4,
+            "title": "Step 4: student note (changed)",
+            "message": "“abs read right after”: flagged from the notebook text; the model located it and the quote was verified, but no number was computed.",
+            "tool": "model locate + quote_check"
+          }
+        ],
+        "trace": [
+          {
+            "t": 0,
+            "kind": "model",
+            "label": "groq: extract steps + recorded values"
+          },
+          {
+            "t": 1546,
+            "kind": "model",
+            "label": "Extraction parsed",
+            "detail": "4 steps, 4 recorded values, 687+878 tokens, 1545 ms"
+          },
+          {
+            "t": 1546,
+            "kind": "check",
+            "label": "provenance_check",
+            "detail": "0 model value(s) rejected as not present in source text"
+          },
+          {
+            "t": 1546,
+            "kind": "tool",
+            "label": "regex_parse (recall net)",
+            "detail": "1 value(s) the model skipped were added from the deterministic parser"
+          },
+          {
+            "t": 1546,
+            "kind": "tool",
+            "label": "ratio_check",
+            "detail": "6 protocol values compared at ±10%"
+          },
+          {
+            "t": 1546,
+            "kind": "tool",
+            "label": "dilution (M1·V1=M2·V2)",
+            "detail": "working concentration within tolerance or not applicable"
+          },
+          {
+            "t": 1546,
+            "kind": "check",
+            "label": "done",
+            "detail": "1 error(s), 4 warning(s)"
+          }
+        ],
+        "ledger": [
+          {
+            "provider": "groq",
+            "model": "openai/gpt-oss-20b",
+            "purpose": "extract steps + notebook values",
+            "promptTokens": 687,
+            "completionTokens": 878,
+            "ms": 1545,
+            "listPriceUsd": 0.00031492499999999997
+          }
+        ],
+        "warnings": [],
+        "startedAt": "2026-11-26T00:02:27.810Z"
+      }
+    },
+    {
+      "id": "06-harder-handwritten-photo",
+      "rubric": "R4 demanding example (handwritten page via Gemini vision)",
+      "server": "live",
+      "mode": "live",
+      "pass": true,
+      "errors": 3,
+      "warnings": 1,
+      "topFinding": "Step 2: 10× less transfer volume than the protocol",
+      "tokens": 2663,
+      "modelMs": 2236,
+      "wallMs": 2298,
+      "models": "gemini:gemini-3.5-flash-lite, groq:openai/gpt-oss-20b",
+      "repeatNote": "",
+      "screenshot": "06-harder-handwritten-photo.png",
+      "raw": {
+        "mode": "live",
+        "steps": [
+          {
+            "n": 1,
+            "text": "Rinse a 100.0 mL volumetric flask three times with deionized water.",
+            "quantities": [
+              {
+                "name": "volume",
+                "value": 100,
+                "unit": "mL",
+                "role": "volume",
+                "quote": "100.0 mL"
+              }
+            ]
+          },
+          {
+            "n": 2,
+            "text": "Using a 10 mL volumetric pipette, transfer 10.0 mL of the 1.0 M NaCl stock solution into the flask.",
+            "quantities": [
+              {
+                "name": "transfer volume",
+                "value": 10,
+                "unit": "mL",
+                "role": "transfer_volume",
+                "quote": "10.0 mL"
+              },
+              {
+                "name": "stock concentration",
+                "value": 1,
+                "unit": "M",
+                "role": "stock_concentration",
+                "quote": "1.0 M"
+              },
+              {
+                "name": "pipette size",
+                "value": 10,
+                "unit": "mL",
+                "role": "volume",
+                "quote": "10 mL"
+              }
+            ]
+          },
+          {
+            "n": 3,
+            "text": "Dilute to the mark (100.0 mL total) with deionized water to make 0.10 M NaCl.",
+            "quantities": [
+              {
+                "name": "final volume",
+                "value": 100,
+                "unit": "mL",
+                "role": "final_volume",
+                "quote": "100.0 mL"
+              },
+              {
+                "name": "target concentration",
+                "value": 0.1,
+                "unit": "M",
+                "role": "target_concentration",
+                "quote": "0.10 M"
+              }
+            ]
+          }
+        ],
+        "actuals": [
+          {
+            "stepN": 2,
+            "name": "transfer volume",
+            "value": 1,
+            "unit": "mL",
+            "role": "transfer_volume",
+            "quote": "1.0 mL",
+            "source": "model"
+          },
+          {
+            "stepN": 2,
+            "name": "stock concentration",
+            "value": 1,
+            "unit": "M",
+            "role": "stock_concentration",
+            "quote": "1.0 M",
+            "source": "model"
+          },
+          {
+            "stepN": 3,
+            "name": "final volume",
+            "value": 100,
+            "unit": "mL",
+            "role": "final_volume",
+            "quote": "100.0 mL",
+            "source": "model"
+          },
+          {
+            "name": "flask size",
+            "value": 100,
+            "unit": "mL",
+            "role": "volume",
+            "quote": "100 mL",
+            "stepN": 1,
+            "source": "regex"
+          },
+          {
+            "name": "pipette size",
+            "value": 1,
+            "unit": "mL",
+            "role": "volume",
+            "quote": "1 mL",
+            "source": "regex"
+          },
+          {
+            "name": "labeled",
+            "value": 0.1,
+            "unit": "M",
+            "role": "other",
+            "quote": "0.10 M",
+            "stepN": 4,
+            "source": "regex"
+          }
+        ],
+        "comparisons": [
+          {
+            "stepN": 1,
+            "name": "volume",
+            "expected": {
+              "value": 100,
+              "unit": "mL"
+            },
+            "observed": {
+              "value": 100,
+              "unit": "mL"
+            },
+            "ratio": 1,
+            "status": "ok",
+            "tool": "ratio_check (unit_normalize → observed/expected)"
+          },
+          {
+            "stepN": 2,
+            "name": "transfer volume",
+            "expected": {
+              "value": 10,
+              "unit": "mL"
+            },
+            "observed": {
+              "value": 1,
+              "unit": "mL"
+            },
+            "ratio": 0.1,
+            "status": "error",
+            "tool": "ratio_check (unit_normalize → observed/expected)"
+          },
+          {
+            "stepN": 2,
+            "name": "stock concentration",
+            "expected": {
+              "value": 1,
+              "unit": "M"
+            },
+            "observed": {
+              "value": 1,
+              "unit": "M"
+            },
+            "ratio": 1,
+            "status": "ok",
+            "tool": "ratio_check (unit_normalize → observed/expected)"
+          },
+          {
+            "stepN": 2,
+            "name": "pipette size",
+            "expected": {
+              "value": 10,
+              "unit": "mL"
+            },
+            "observed": {
+              "value": 1,
+              "unit": "mL"
+            },
+            "ratio": 0.1,
+            "status": "error",
+            "tool": "ratio_check (unit_normalize → observed/expected)"
+          },
+          {
+            "stepN": 3,
+            "name": "final volume",
+            "expected": {
+              "value": 100,
+              "unit": "mL"
+            },
+            "observed": {
+              "value": 100,
+              "unit": "mL"
+            },
+            "ratio": 1,
+            "status": "ok",
+            "tool": "ratio_check (unit_normalize → observed/expected)"
+          }
+        ],
+        "deviations": [
+          {
+            "id": "tenx-2-transfer volume",
+            "code": "TEN_X_ERROR",
+            "severity": "error",
+            "stepN": 2,
+            "title": "Step 2: 10× less transfer volume than the protocol",
             "message": "You recorded 1 mL; the lab manual says 10 mL. That is exactly a 10× (÷10) difference, the signature of a misplaced decimal or wrong pipette.",
             "expected": "10 mL",
             "observed": "1 mL",
@@ -1799,6 +1791,19 @@
             "tool": "dilution (M1·V1 = M2·V2)"
           },
           {
+            "id": "tenx-2-pipette size",
+            "code": "TEN_X_ERROR",
+            "severity": "error",
+            "stepN": 2,
+            "title": "Step 2: 10× less pipette size than the protocol",
+            "message": "You recorded 1 mL; the lab manual says 10 mL. That is exactly a 10× (÷10) difference, the signature of a misplaced decimal or wrong pipette.",
+            "expected": "10 mL",
+            "observed": "1 mL",
+            "factor": 10,
+            "suggestion": "Redo step 2 with 10 mL, or ask your TA before using this solution downstream.",
+            "tool": "ratio_check (unit_normalize → observed/expected)"
+          },
+          {
             "id": "note-0",
             "code": "OFF_PROTOCOL_STEP",
             "severity": "warning",
@@ -1806,15 +1811,6 @@
             "title": "Step 2: student note (changed)",
             "message": "“pipetted 1.0 mL of 1.0 M NaCl stock”: flagged from the notebook text; the model located it and the quote was verified, but no number was computed.",
             "tool": "model locate + quote_check"
-          },
-          {
-            "id": "unverified-m-4-inversion count",
-            "code": "UNVERIFIED_EXTRACTION",
-            "severity": "info",
-            "stepN": 4,
-            "title": "Dropped a model value not found in the manual",
-            "message": "The model proposed 10 times for “inversion count”, but that number does not appear in the lab-manual text (or the unit is not recognized), so it was not used.",
-            "tool": "provenance_check (number must appear in source)"
           }
         ],
         "trace": [
@@ -1824,48 +1820,48 @@
             "label": "gemini: transcribe notebook photo"
           },
           {
-            "t": 4943,
+            "t": 1228,
             "kind": "model",
             "label": "Transcript received",
-            "detail": "11 lines, 4943 ms"
+            "detail": "11 lines, 1228 ms"
           },
           {
-            "t": 4943,
+            "t": 1228,
             "kind": "model",
             "label": "groq: extract steps + recorded values"
           },
           {
-            "t": 5691,
+            "t": 2236,
             "kind": "model",
             "label": "Extraction parsed",
-            "detail": "4 steps, 3 recorded values, 702+543 tokens, 747 ms"
+            "detail": "3 steps, 3 recorded values, 702+720 tokens, 1008 ms"
           },
           {
-            "t": 5691,
+            "t": 2236,
             "kind": "check",
             "label": "provenance_check",
-            "detail": "1 model value(s) rejected as not present in source text"
+            "detail": "0 model value(s) rejected as not present in source text"
           },
           {
-            "t": 5692,
+            "t": 2236,
             "kind": "tool",
             "label": "regex_parse (recall net)",
-            "detail": "4 value(s) the model skipped were added from the deterministic parser"
+            "detail": "5 value(s) the model skipped were added from the deterministic parser"
           },
           {
-            "t": 5694,
+            "t": 2237,
             "kind": "tool",
             "label": "ratio_check",
             "detail": "5 protocol values compared at ±10%"
           },
           {
-            "t": 5694,
+            "t": 2237,
             "kind": "tool",
             "label": "dilution (M1·V1=M2·V2)",
             "detail": "Working solution is 0.01 M, not 0.1 M"
           },
           {
-            "t": 5694,
+            "t": 2238,
             "kind": "check",
             "label": "done",
             "detail": "3 error(s), 1 warning(s)"
@@ -1878,7 +1874,7 @@
             "purpose": "notebook photo → text",
             "promptTokens": 1149,
             "completionTokens": 92,
-            "ms": 4943,
+            "ms": 1228,
             "listPriceUsd": 0.00015170000000000003
           },
           {
@@ -1886,14 +1882,14 @@
             "model": "openai/gpt-oss-20b",
             "purpose": "extract steps + notebook values",
             "promptTokens": 702,
-            "completionTokens": 543,
-            "ms": 747,
-            "listPriceUsd": 0.00021555
+            "completionTokens": 720,
+            "ms": 1008,
+            "listPriceUsd": 0.00026865
           }
         ],
         "notebookTranscript": "11/24 Lab 3 NaCl dilution (bench 6)\n\n1. rinsed 100 mL vol flask 3x w/ DI\n\n2. pipetted 1.0 mL of 1.0 M NaCl stock\n\ninto flask (used 1 mL pipette)\n\n3. diluted to mark, 100.0 mL total\n\n4. inverted 10x, labeled 0.10 M NaCl",
         "warnings": [],
-        "startedAt": "2026-11-25T23:53:49.413Z"
+        "startedAt": "2026-11-26T00:02:36.726Z"
       }
     },
     {
@@ -1904,10 +1900,10 @@
       "pass": true,
       "errors": 3,
       "warnings": 0,
-      "topFinding": "Step 2: 10× less pipette size than the protocol",
+      "topFinding": "Step 2: 10× less volume transferred than the protocol",
       "tokens": 0,
       "modelMs": 0,
-      "wallMs": 149,
+      "wallMs": 147,
       "models": "none",
       "repeatNote": "",
       "screenshot": "07-failure-bad-key-fallback.png",
@@ -2115,19 +2111,6 @@
         ],
         "deviations": [
           {
-            "id": "tenx-2-pipette size",
-            "code": "TEN_X_ERROR",
-            "severity": "error",
-            "stepN": 2,
-            "title": "Step 2: 10× less pipette size than the protocol",
-            "message": "You recorded 1 mL; the lab manual says 10 mL. That is exactly a 10× (÷10) difference, the signature of a misplaced decimal or wrong pipette.",
-            "expected": "10 mL",
-            "observed": "1 mL",
-            "factor": 10,
-            "suggestion": "Redo step 2 with 10 mL, or ask your TA before using this solution downstream.",
-            "tool": "ratio_check (unit_normalize → observed/expected)"
-          },
-          {
             "id": "tenx-2-volume transferred",
             "code": "TEN_X_ERROR",
             "severity": "error",
@@ -2152,6 +2135,19 @@
             "factor": 10,
             "suggestion": "Use V1 = 10 mL of 1 M stock in 100 mL total.",
             "tool": "dilution (M1·V1 = M2·V2)"
+          },
+          {
+            "id": "tenx-2-pipette size",
+            "code": "TEN_X_ERROR",
+            "severity": "error",
+            "stepN": 2,
+            "title": "Step 2: 10× less pipette size than the protocol",
+            "message": "You recorded 1 mL; the lab manual says 10 mL. That is exactly a 10× (÷10) difference, the signature of a misplaced decimal or wrong pipette.",
+            "expected": "10 mL",
+            "observed": "1 mL",
+            "factor": 10,
+            "suggestion": "Redo step 2 with 10 mL, or ask your TA before using this solution downstream.",
+            "tool": "ratio_check (unit_normalize → observed/expected)"
           }
         ],
         "trace": [
@@ -2161,37 +2157,37 @@
             "label": "groq: extract steps + recorded values"
           },
           {
-            "t": 91,
+            "t": 92,
             "kind": "error",
             "label": "Model extraction failed → deterministic parser",
             "detail": "groq HTTP 401: {\"error\":{\"message\":\"Invalid API Key\",\"type\":\"invalid_request_error\",\"code\":\"invalid_api_key\"}}\n"
           },
           {
-            "t": 93,
+            "t": 94,
             "kind": "tool",
             "label": "regex_parse",
             "detail": "4 steps, 6 recorded values"
           },
           {
-            "t": 93,
+            "t": 94,
             "kind": "check",
             "label": "provenance_check",
             "detail": "0 model value(s) rejected as not present in source text"
           },
           {
-            "t": 94,
+            "t": 95,
             "kind": "tool",
             "label": "ratio_check",
             "detail": "5 protocol values compared at ±10%"
           },
           {
-            "t": 94,
+            "t": 95,
             "kind": "tool",
             "label": "dilution (M1·V1=M2·V2)",
             "detail": "Working solution is 0.01 M, not 0.1 M"
           },
           {
-            "t": 94,
+            "t": 95,
             "kind": "check",
             "label": "done",
             "detail": "3 error(s), 0 warning(s)"
@@ -2201,7 +2197,7 @@
         "warnings": [
           "Model extraction failed (groq HTTP 401: {\"error\":{\"message\":\"Invalid API Key\",\"type\":\"invalid_request_error\",\"code\":\"invalid_api_key\"}}\n); used the deterministic parser instead."
         ],
-        "startedAt": "2026-11-25T23:54:02.548Z"
+        "startedAt": "2026-11-26T00:02:46.377Z"
       }
     },
     {
@@ -2212,10 +2208,10 @@
       "pass": true,
       "errors": 3,
       "warnings": 1,
-      "topFinding": "Step 2: 10× less transfer_volume than the protocol",
+      "topFinding": "Step 2: 10× less transfer volume than the protocol",
       "tokens": 1596,
       "modelMs": 1331,
-      "wallMs": 64,
+      "wallMs": 53,
       "models": "fixture:openai/gpt-oss-20b",
       "repeatNote": "",
       "screenshot": "08-no-key-fixture-replay.png",
@@ -2240,14 +2236,14 @@
             "text": "Using a 10 mL volumetric pipette, transfer 10.0 mL of the 1.0 M NaCl stock solution into the flask.",
             "quantities": [
               {
-                "name": "transfer_volume",
+                "name": "transfer volume",
                 "value": 10,
                 "unit": "mL",
                 "role": "transfer_volume",
                 "quote": "10.0 mL"
               },
               {
-                "name": "stock_concentration",
+                "name": "stock concentration",
                 "value": 1,
                 "unit": "M",
                 "role": "stock_concentration",
@@ -2267,14 +2263,14 @@
             "text": "Dilute to the mark (100.0 mL total) with deionized water to make 0.10 M NaCl.",
             "quantities": [
               {
-                "name": "final_volume",
+                "name": "final volume",
                 "value": 100,
                 "unit": "mL",
                 "role": "final_volume",
                 "quote": "100.0 mL"
               },
               {
-                "name": "target_concentration",
+                "name": "target concentration",
                 "value": 0.1,
                 "unit": "M",
                 "role": "target_concentration",
@@ -2291,7 +2287,7 @@
         "actuals": [
           {
             "stepN": 2,
-            "name": "transfer_volume",
+            "name": "transfer volume",
             "value": 1,
             "unit": "mL",
             "role": "transfer_volume",
@@ -2300,7 +2296,7 @@
           },
           {
             "stepN": 2,
-            "name": "stock_concentration",
+            "name": "stock concentration",
             "value": 1,
             "unit": "M",
             "role": "stock_concentration",
@@ -2309,7 +2305,7 @@
           },
           {
             "stepN": 3,
-            "name": "final_volume",
+            "name": "final volume",
             "value": 100,
             "unit": "mL",
             "role": "final_volume",
@@ -2362,7 +2358,7 @@
           },
           {
             "stepN": 2,
-            "name": "transfer_volume",
+            "name": "transfer volume",
             "expected": {
               "value": 10,
               "unit": "mL"
@@ -2377,7 +2373,7 @@
           },
           {
             "stepN": 2,
-            "name": "stock_concentration",
+            "name": "stock concentration",
             "expected": {
               "value": 1,
               "unit": "M"
@@ -2407,7 +2403,7 @@
           },
           {
             "stepN": 3,
-            "name": "final_volume",
+            "name": "final volume",
             "expected": {
               "value": 100,
               "unit": "mL"
@@ -2423,24 +2419,11 @@
         ],
         "deviations": [
           {
-            "id": "tenx-2-transfer_volume",
+            "id": "tenx-2-transfer volume",
             "code": "TEN_X_ERROR",
             "severity": "error",
             "stepN": 2,
-            "title": "Step 2: 10× less transfer_volume than the protocol",
-            "message": "You recorded 1 mL; the lab manual says 10 mL. That is exactly a 10× (÷10) difference, the signature of a misplaced decimal or wrong pipette.",
-            "expected": "10 mL",
-            "observed": "1 mL",
-            "factor": 10,
-            "suggestion": "Redo step 2 with 10 mL, or ask your TA before using this solution downstream.",
-            "tool": "ratio_check (unit_normalize → observed/expected)"
-          },
-          {
-            "id": "tenx-2-pipette size",
-            "code": "TEN_X_ERROR",
-            "severity": "error",
-            "stepN": 2,
-            "title": "Step 2: 10× less pipette size than the protocol",
+            "title": "Step 2: 10× less transfer volume than the protocol",
             "message": "You recorded 1 mL; the lab manual says 10 mL. That is exactly a 10× (÷10) difference, the signature of a misplaced decimal or wrong pipette.",
             "expected": "10 mL",
             "observed": "1 mL",
@@ -2460,6 +2443,19 @@
             "factor": 10,
             "suggestion": "Use V1 = 10 mL of 1 M stock in 100 mL total.",
             "tool": "dilution (M1·V1 = M2·V2)"
+          },
+          {
+            "id": "tenx-2-pipette size",
+            "code": "TEN_X_ERROR",
+            "severity": "error",
+            "stepN": 2,
+            "title": "Step 2: 10× less pipette size than the protocol",
+            "message": "You recorded 1 mL; the lab manual says 10 mL. That is exactly a 10× (÷10) difference, the signature of a misplaced decimal or wrong pipette.",
+            "expected": "10 mL",
+            "observed": "1 mL",
+            "factor": 10,
+            "suggestion": "Redo step 2 with 10 mL, or ask your TA before using this solution downstream.",
+            "tool": "ratio_check (unit_normalize → observed/expected)"
           },
           {
             "id": "note-0",
@@ -2485,25 +2481,25 @@
             "detail": "0 model value(s) rejected as not present in source text"
           },
           {
-            "t": 4,
+            "t": 3,
             "kind": "tool",
             "label": "regex_parse (recall net)",
             "detail": "4 value(s) the model skipped were added from the deterministic parser"
           },
           {
-            "t": 5,
+            "t": 4,
             "kind": "tool",
             "label": "ratio_check",
             "detail": "5 protocol values compared at ±10%"
           },
           {
-            "t": 5,
+            "t": 4,
             "kind": "tool",
             "label": "dilution (M1·V1=M2·V2)",
             "detail": "Working solution is 0.01 M, not 0.1 M"
           },
           {
-            "t": 5,
+            "t": 4,
             "kind": "check",
             "label": "done",
             "detail": "3 error(s), 1 warning(s)"
@@ -2521,7 +2517,7 @@
           }
         ],
         "warnings": [],
-        "startedAt": "2026-11-25T23:54:03.085Z"
+        "startedAt": "2026-11-26T00:02:46.843Z"
       }
     },
     {
