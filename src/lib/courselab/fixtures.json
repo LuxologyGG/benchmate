@@ -1,0 +1,483 @@
+{
+  "recordedAt": "2026-11-25T23:46:31.740Z",
+  "note": "Raw model output recorded from a live free-tier Groq run. Replayed only when no key is configured.",
+  "nacl-ok": {
+    "raw": {
+      "steps": [
+        {
+          "n": 1,
+          "text": "Rinse a 100.0 mL volumetric flask three times with deionized water",
+          "quantities": [
+            {
+              "name": "flask volume",
+              "value": 100,
+              "unit": "mL",
+              "role": "volume",
+              "quote": "100.0 mL"
+            }
+          ]
+        },
+        {
+          "n": 2,
+          "text": "Using a 10 mL volumetric pipette, transfer 10.0 mL of the 1.0 M NaCl stock solution into the flask",
+          "quantities": [
+            {
+              "name": "transfer volume",
+              "value": 10,
+              "unit": "mL",
+              "role": "transfer_volume",
+              "quote": "10.0 mL"
+            },
+            {
+              "name": "stock concentration",
+              "value": 1,
+              "unit": "M",
+              "role": "stock_concentration",
+              "quote": "1.0 M"
+            }
+          ]
+        },
+        {
+          "n": 3,
+          "text": "Dilute to the mark (100.0 mL total) with deionized water to make 0.10 M NaCl",
+          "quantities": [
+            {
+              "name": "final volume",
+              "value": 100,
+              "unit": "mL",
+              "role": "final_volume",
+              "quote": "100.0 mL"
+            }
+          ]
+        },
+        {
+          "n": 4,
+          "text": "Stopper and invert the flask ten times to mix, then label it",
+          "quantities": []
+        }
+      ],
+      "actuals": [
+        {
+          "stepN": 2,
+          "name": "transfer volume",
+          "value": 10,
+          "unit": "mL",
+          "role": "transfer_volume",
+          "quote": "10.0 mL"
+        },
+        {
+          "stepN": 2,
+          "name": "stock concentration",
+          "value": 1,
+          "unit": "M",
+          "role": "stock_concentration",
+          "quote": "1.0 M"
+        },
+        {
+          "stepN": 3,
+          "name": "final volume",
+          "value": 100,
+          "unit": "mL",
+          "role": "final_volume",
+          "quote": "100.0 mL"
+        }
+      ],
+      "notes": []
+    },
+    "ledger": [
+      {
+        "provider": "groq",
+        "model": "openai/gpt-oss-20b",
+        "purpose": "extract steps + notebook values",
+        "promptTokens": 700,
+        "completionTokens": 543,
+        "ms": 883,
+        "listPriceUsd": 0.0002154
+      }
+    ]
+  },
+  "nacl-10x": {
+    "raw": {
+      "steps": [
+        {
+          "n": 1,
+          "text": "Rinse a 100.0 mL volumetric flask three times with deionized water.",
+          "quantities": [
+            {
+              "name": "volume",
+              "value": 100,
+              "unit": "mL",
+              "role": "volume",
+              "quote": "100.0 mL"
+            }
+          ]
+        },
+        {
+          "n": 2,
+          "text": "Using a 10 mL volumetric pipette, transfer 10.0 mL of the 1.0 M NaCl stock solution into the flask.",
+          "quantities": [
+            {
+              "name": "transfer_volume",
+              "value": 10,
+              "unit": "mL",
+              "role": "transfer_volume",
+              "quote": "10.0 mL"
+            },
+            {
+              "name": "stock_concentration",
+              "value": 1,
+              "unit": "M",
+              "role": "stock_concentration",
+              "quote": "1.0 M"
+            }
+          ]
+        },
+        {
+          "n": 3,
+          "text": "Dilute to the mark (100.0 mL total) with deionized water to make 0.10 M NaCl.",
+          "quantities": [
+            {
+              "name": "final_volume",
+              "value": 100,
+              "unit": "mL",
+              "role": "final_volume",
+              "quote": "100.0 mL"
+            },
+            {
+              "name": "target_concentration",
+              "value": 0.1,
+              "unit": "M",
+              "role": "target_concentration",
+              "quote": "0.10 M"
+            }
+          ]
+        },
+        {
+          "n": 4,
+          "text": "Stopper and invert the flask ten times to mix, then label it.",
+          "quantities": []
+        }
+      ],
+      "actuals": [
+        {
+          "stepN": 2,
+          "name": "transfer_volume",
+          "value": 1,
+          "unit": "mL",
+          "role": "transfer_volume",
+          "quote": "1.0 mL"
+        },
+        {
+          "stepN": 2,
+          "name": "stock_concentration",
+          "value": 1,
+          "unit": "M",
+          "role": "stock_concentration",
+          "quote": "1.0 M"
+        },
+        {
+          "stepN": 3,
+          "name": "final_volume",
+          "value": 100,
+          "unit": "mL",
+          "role": "final_volume",
+          "quote": "100.0 mL"
+        }
+      ],
+      "notes": [
+        {
+          "stepN": 2,
+          "kind": "changed",
+          "quote": "pipetted 1.0 mL of 1.0 M NaCl stock into flask"
+        }
+      ]
+    },
+    "ledger": [
+      {
+        "provider": "groq",
+        "model": "openai/gpt-oss-20b",
+        "purpose": "extract steps + notebook values",
+        "promptTokens": 702,
+        "completionTokens": 894,
+        "ms": 1331,
+        "listPriceUsd": 0.00032084999999999997
+      }
+    ]
+  },
+  "ecoli-ok": {
+    "raw": {
+      "steps": [
+        {
+          "n": 1,
+          "text": "add 9.0 mL of sterile saline to each tube",
+          "quantities": [
+            {
+              "name": "saline",
+              "value": 9,
+              "unit": "mL",
+              "role": "volume",
+              "quote": "9.0 mL"
+            }
+          ]
+        },
+        {
+          "n": 2,
+          "text": "transfer 1.0 mL of the overnight culture into the 10^-1 tube",
+          "quantities": [
+            {
+              "name": "overnight culture",
+              "value": 1,
+              "unit": "mL",
+              "role": "transfer_volume",
+              "quote": "1.0 mL"
+            }
+          ]
+        },
+        {
+          "n": 3,
+          "text": "repeat the 1.0 mL transfer down the series to the 10^-4 tube",
+          "quantities": [
+            {
+              "name": "overnight culture",
+              "value": 1,
+              "unit": "mL",
+              "role": "transfer_volume",
+              "quote": "1.0 mL"
+            }
+          ]
+        },
+        {
+          "n": 4,
+          "text": "spread 0.1 mL from the 10^-4 tube onto an LB agar plate",
+          "quantities": [
+            {
+              "name": "10^-4 tube sample",
+              "value": 0.1,
+              "unit": "mL",
+              "role": "plated_volume",
+              "quote": "0.1 mL"
+            }
+          ]
+        },
+        {
+          "n": 5,
+          "text": "incubate the plate upside down at 37 °C for 24 h",
+          "quantities": [
+            {
+              "name": "temperature",
+              "value": 37,
+              "unit": "°C",
+              "role": "temperature",
+              "quote": "37 °C"
+            },
+            {
+              "name": "incubation time",
+              "value": 24,
+              "unit": "h",
+              "role": "time",
+              "quote": "24 h"
+            }
+          ]
+        }
+      ],
+      "actuals": [
+        {
+          "stepN": 1,
+          "name": "saline",
+          "value": 9,
+          "unit": "mL",
+          "role": "volume",
+          "quote": "9.0 mL"
+        },
+        {
+          "stepN": 2,
+          "name": "overnight culture",
+          "value": 1,
+          "unit": "mL",
+          "role": "transfer_volume",
+          "quote": "1.0 mL"
+        },
+        {
+          "stepN": 3,
+          "name": "overnight culture",
+          "value": 1,
+          "unit": "mL",
+          "role": "transfer_volume",
+          "quote": "1.0 mL"
+        },
+        {
+          "stepN": 4,
+          "name": "10^-4 tube sample",
+          "value": 0.1,
+          "unit": "mL",
+          "role": "plated_volume",
+          "quote": "0.1 mL"
+        },
+        {
+          "stepN": 5,
+          "name": "temperature",
+          "value": 37,
+          "unit": "°C",
+          "role": "temperature",
+          "quote": "37 °C"
+        },
+        {
+          "stepN": 5,
+          "name": "incubation time",
+          "value": 24,
+          "unit": "h",
+          "role": "time",
+          "quote": "24 h"
+        }
+      ],
+      "notes": []
+    },
+    "ledger": [
+      {
+        "provider": "groq",
+        "model": "openai/gpt-oss-20b",
+        "purpose": "extract steps + notebook values",
+        "promptTokens": 736,
+        "completionTokens": 736,
+        "ms": 961,
+        "listPriceUsd": 0.000276
+      }
+    ]
+  },
+  "cuso4-messy": {
+    "raw": {
+      "steps": [
+        {
+          "n": 1,
+          "text": "Obtain about 30 mL of 0.500 M CuSO4 stock",
+          "quantities": [
+            {
+              "name": "stock volume",
+              "value": 30,
+              "unit": "mL",
+              "role": "volume",
+              "quote": "30 mL"
+            },
+            {
+              "name": "stock concentration",
+              "value": 0.5,
+              "unit": "M",
+              "role": "stock_concentration",
+              "quote": "0.500 M"
+            }
+          ]
+        },
+        {
+          "n": 2,
+          "text": "Pipette 25.00 mL of the stock into a 250.0 mL volumetric flask",
+          "quantities": [
+            {
+              "name": "transfer volume",
+              "value": 25,
+              "unit": "mL",
+              "role": "transfer_volume",
+              "quote": "25.00 mL"
+            },
+            {
+              "name": "final volume",
+              "value": 250,
+              "unit": "mL",
+              "role": "final_volume",
+              "quote": "250.0 mL"
+            }
+          ]
+        },
+        {
+          "n": 3,
+          "text": "Dilute to the mark with DI water to give 0.0500 M CuSO4",
+          "quantities": [
+            {
+              "name": "target concentration",
+              "value": 0.05,
+              "unit": "M",
+              "role": "target_concentration",
+              "quote": "0.0500 M"
+            }
+          ]
+        },
+        {
+          "n": 4,
+          "text": "Let the solution equilibrate for 5 min at 20 °C before measuring absorbance",
+          "quantities": [
+            {
+              "name": "equilibration time",
+              "value": 5,
+              "unit": "min",
+              "role": "time",
+              "quote": "5 min"
+            },
+            {
+              "name": "temperature",
+              "value": 20,
+              "unit": "°C",
+              "role": "temperature",
+              "quote": "20 °C"
+            }
+          ]
+        }
+      ],
+      "actuals": [
+        {
+          "stepN": 1,
+          "name": "stock volume",
+          "value": 30,
+          "unit": "mL",
+          "role": "volume",
+          "quote": "~30ml"
+        },
+        {
+          "stepN": 2,
+          "name": "transfer volume",
+          "value": 25,
+          "unit": "mL",
+          "role": "transfer_volume",
+          "quote": "25 mL"
+        },
+        {
+          "stepN": 3,
+          "name": "final volume",
+          "value": 250,
+          "unit": "mL",
+          "role": "final_volume",
+          "quote": "250 flask"
+        },
+        {
+          "stepN": 4,
+          "name": "equilibration time",
+          "value": 2,
+          "unit": "min",
+          "role": "time",
+          "quote": "2 min"
+        }
+      ],
+      "notes": [
+        {
+          "stepN": 4,
+          "kind": "changed",
+          "quote": "waited 2 min bc line for the spec"
+        },
+        {
+          "stepN": 2,
+          "kind": "skipped",
+          "quote": "forgot to stopper before inverting"
+        }
+      ]
+    },
+    "ledger": [
+      {
+        "provider": "groq",
+        "model": "openai/gpt-oss-20b",
+        "purpose": "extract steps + notebook values",
+        "promptTokens": 687,
+        "completionTokens": 706,
+        "ms": 933,
+        "listPriceUsd": 0.00026332499999999996
+      }
+    ]
+  }
+}

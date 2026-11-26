@@ -236,7 +236,7 @@ export async function estimateGelLanes(
     }
 
     const minLaneW = width * 0.08;
-    let lanes = runs
+    const lanes = runs
       .filter((r) => r.x1 - r.x0 + 1 >= minLaneW)
       .sort((a, b) => b.score - a.score)
       .slice(0, maxLanes)

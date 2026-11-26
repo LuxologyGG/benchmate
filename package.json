@@ -22,7 +22,11 @@
     "verify:fresh-clone": "node scripts/verify-fresh-clone.mjs",
     "muse:build": "node scripts/muse-build/orchestrate.mjs",
     "muse:continue": "node scripts/muse-build/continue.mjs",
-    "muse:models": "node -e \"import('./scripts/muse-build/client.mjs').then(async m=>{console.log((await m.listModels()).join('\\n'))})\""
+    "muse:models": "node -e \"import('./scripts/muse-build/client.mjs').then(async m=>{console.log((await m.listModels()).join('\\n'))})\"",
+    "test:courselab": "tsx scripts/test-courselab.ts",
+    "courselab:record": "tsx scripts/record-courselab-fixtures.ts",
+    "eval:courselab": "node --env-file-if-exists=.env.local scripts/eval-courselab.mjs",
+    "build:static": "node scripts/build-static.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.9.0",

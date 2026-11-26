@@ -56,3 +56,4 @@ uploads/
 agent-tools/
 /tmp/
 scripts/muse-build/state/
+.static-aside-*

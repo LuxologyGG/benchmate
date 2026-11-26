@@ -129,7 +129,7 @@ async function liveSegmentGel(
   notes.push(`Intensity profile proposals: ${intensitySegs.length} band(s).`);
 
   let samFull: Segmentation[] = [];
-  let samLane: Segmentation[] = [];
+  const samLane: Segmentation[] = [];
 
   if (intensitySegs.length >= 12) {
     // Strong intensity signal (typical synthetic ladders): one SAM call for live honesty
